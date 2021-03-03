@@ -75,6 +75,8 @@ public class JsonParserTest {
     DatasetFieldType compoundSingleType;
     JsonParser sut;
     
+    JsonPrinter jsonPrinter = null;
+    
     public JsonParserTest() {
     }
     
@@ -120,6 +122,8 @@ public class JsonParserTest {
         compoundSingleType.setChildDatasetFieldTypes(childTypes);
         settingsSvc = new MockSettingsSvc();
         sut = new JsonParser(datasetFieldTypeSvc, null, settingsSvc);
+        jsonPrinter = new JsonPrinter();
+        jsonPrinter.setSettingsService(settingsSvc);
     }
     
     @Test 
@@ -135,7 +139,7 @@ public class JsonParserTest {
         }
         expected.setDatasetFieldCompoundValues(vals);
         
-        JsonObject json = JsonPrinter.json(expected);
+        JsonObject json = jsonPrinter.json(expected);
         
         System.out.println("json = " + json);
         
@@ -157,7 +161,7 @@ public class JsonParserTest {
         DatasetFieldType fieldType = datasetFieldTypeSvc.findByName("publicationIdType");
         expected.setDatasetFieldType( fieldType );
         expected.setControlledVocabularyValues( Collections.singletonList( fieldType.getControlledVocabularyValue("ark")));
-        JsonObject json = JsonPrinter.json(expected);
+        JsonObject json = jsonPrinter.json(expected);
         
         DatasetField actual = sut.parseField(json);
         assertFieldsEqual(expected, actual);
@@ -173,7 +177,7 @@ public class JsonParserTest {
                  fieldType.getControlledVocabularyValue("law"),
                  fieldType.getControlledVocabularyValue("cs")));
         
-        JsonObject json = JsonPrinter.json(expected);      
+        JsonObject json = jsonPrinter.json(expected);
         DatasetField actual = sut.parseField(json);
         assertFieldsEqual(expected, actual);
         
@@ -215,7 +219,7 @@ public class JsonParserTest {
         DatasetField expected = new DatasetField();
         expected.setDatasetFieldType( datasetFieldTypeSvc.findByName("description") );
         expected.setDatasetFieldValues( Collections.singletonList(new DatasetFieldValue(expected, "This is a description value")) );
-        JsonObject json = JsonPrinter.json(expected);
+        JsonObject json = jsonPrinter.json(expected);
         
         DatasetField actual = sut.parseField(json);
         
@@ -229,7 +233,7 @@ public class JsonParserTest {
         expected.setDatasetFieldValues( Arrays.asList(new DatasetFieldValue(expected, "kw1"),
                 new DatasetFieldValue(expected, "kw2"),
                 new DatasetFieldValue(expected, "kw3")) );
-        JsonObject json = JsonPrinter.json(expected);
+        JsonObject json = jsonPrinter.json(expected);
         
         DatasetField actual = sut.parseField(json);
         
@@ -382,7 +386,7 @@ public class JsonParserTest {
         c.clear();
         c.set(2015, 8, 15);
         Date d = c.getTime();
-        String generated = JsonPrinter.format(d);
+        String generated = jsonPrinter.format(d);
         System.err.println(generated);
         Date parsedDate = sut.parseDate(generated);
         Calendar p = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
@@ -406,7 +410,7 @@ public class JsonParserTest {
         c.clear();
         c.set(2015, 8, 15, 13, 37, 56);
         Date d = c.getTime();
-        String generated = JsonPrinter.format(d);
+        String generated = jsonPrinter.format(d);
         System.err.println(generated);
         Date parsedDate = sut.parseTime(generated);
         assertEquals(d, parsedDate);
@@ -464,7 +468,7 @@ public class JsonParserTest {
         original.add( IpAddressRange.make(IpAddress.valueOf("1:2:3::4:5"), IpAddress.valueOf("1:2:3::4:5")) );
         original.add( IpAddressRange.make(IpAddress.valueOf("1:2:3::3:ff"), IpAddress.valueOf("1:2:3::3:5")) );
         
-        JsonObject serialized = JsonPrinter.json(original).build();
+        JsonObject serialized = jsonPrinter.json(original).build();
         
         System.out.println( serialized.toString() );
         
@@ -486,7 +490,7 @@ public class JsonParserTest {
         
         original.add( IpAddressRange.make(IpAddress.valueOf("1.1.1.1"), IpAddress.valueOf("1.1.1.1")) );
         
-        JsonObject serialized = JsonPrinter.json(original).build();
+        JsonObject serialized = jsonPrinter.json(original).build();
         
         System.out.println( serialized.toString() );
         
@@ -517,7 +521,7 @@ public class JsonParserTest {
         original.add( IpAddressRange.make(IpAddress.valueOf("fe80::22c9:d0ff:fe48:ce61"),
                                           IpAddress.valueOf("fe80::22c9:d0ff:fe48:ce61")) );
         
-        JsonObject serialized = JsonPrinter.json(original).build();
+        JsonObject serialized = jsonPrinter.json(original).build();
         
         System.out.println( serialized.toString() );
         
@@ -540,7 +544,7 @@ public class JsonParserTest {
         MailDomainGroup test = MailDomainGroupTest.genGroup();
         
         // when
-        JsonObject serialized = JsonPrinter.json(test).build();
+        JsonObject serialized = jsonPrinter.json(test).build();
         MailDomainGroup parsed = new JsonParser().parseMailDomainGroup(serialized);
         
         // then
@@ -554,7 +558,7 @@ public class JsonParserTest {
         MailDomainGroup test = MailDomainGroupTest.genRegexGroup();
         
         // when
-        JsonObject serialized = JsonPrinter.json(test).build();
+        JsonObject serialized = jsonPrinter.json(test).build();
         MailDomainGroup parsed = new JsonParser().parseMailDomainGroup(serialized);
         
         // then

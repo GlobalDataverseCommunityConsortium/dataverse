@@ -24,6 +24,7 @@ import java.util.ResourceBundle;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
@@ -33,6 +34,8 @@ import javax.json.JsonValue;
 
 public class OREMap {
 
+    @Inject JsonPrinter jsonPrinter;
+    
     public static final String NAME = "OREMap";
     private Map<String, String> localContext = new TreeMap<String, String>();
     private DatasetVersion version;
@@ -230,7 +233,7 @@ public class OREMap {
                 aggRes.add(JsonLDTerm.checksum.getLabel(), checksum);
             }
             JsonArray tabTags = null;
-            JsonArrayBuilder jab = JsonPrinter.getTabularFileTags(df);
+            JsonArrayBuilder jab = jsonPrinter.getTabularFileTags(df);
             if (jab != null) {
                 tabTags = jab.build();
             }

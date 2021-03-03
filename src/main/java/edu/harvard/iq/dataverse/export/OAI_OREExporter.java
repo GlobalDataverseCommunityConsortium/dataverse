@@ -11,12 +11,15 @@ import java.io.OutputStream;
 import java.util.ResourceBundle;
 import java.util.logging.Logger;
 
+import javax.inject.Inject;
 import javax.json.JsonObject;
 import javax.ws.rs.core.MediaType;
 
 @AutoService(Exporter.class)
 public class OAI_OREExporter implements Exporter {
 
+    @Inject SettingsServiceBean settingsService;
+    
     private static final Logger logger = Logger.getLogger(OAI_OREExporter.class.getCanonicalName());
 
     public static final String NAME = "OAI_ORE";
@@ -25,7 +28,7 @@ public class OAI_OREExporter implements Exporter {
     public void exportDataset(DatasetVersion version, JsonObject json, OutputStream outputStream)
             throws ExportException {
         try {
-            new OREMap(version, ExportService.settingsService.isTrueForKey(SettingsServiceBean.Key.ExcludeEmailFromExport, false)).writeOREMap(outputStream);
+            new OREMap(version, settingsService.isTrueForKey(SettingsServiceBean.Key.ExcludeEmailFromExport, false)).writeOREMap(outputStream);
         } catch (Exception e) {
             logger.severe(e.getMessage());
             e.printStackTrace();

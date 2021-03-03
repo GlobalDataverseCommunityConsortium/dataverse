@@ -3,15 +3,14 @@ package edu.harvard.iq.dataverse.api;
 import edu.harvard.iq.dataverse.authorization.groups.impl.ipaddress.ip.IpAddress;
 import edu.harvard.iq.dataverse.util.json.JsonParseException;
 import edu.harvard.iq.dataverse.util.json.JsonParser;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.brief;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.json;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.toJsonArray;
+import edu.harvard.iq.dataverse.util.json.JsonPrinter;
 import edu.harvard.iq.dataverse.workflow.Workflow;
 import edu.harvard.iq.dataverse.workflow.WorkflowContext.TriggerType;
 import edu.harvard.iq.dataverse.workflow.WorkflowServiceBean;
 import java.util.Arrays;
 import java.util.Optional;
 import javax.ejb.EJB;
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -36,6 +35,9 @@ public class WorkflowsAdmin extends AbstractApiBean {
     @EJB
     WorkflowServiceBean workflows;
     
+    @Inject
+    JsonPrinter jsonPrinter;
+    
     @POST
     public Response addWorkflow(JsonObject jsonWorkflow) {
         JsonParser jp = new JsonParser();
@@ -43,7 +45,7 @@ public class WorkflowsAdmin extends AbstractApiBean {
             Workflow wf = jp.parseWorkflow(jsonWorkflow);
             Workflow managedWf = workflows.save(wf);
             
-            return created("/admin/workflows/"+managedWf.getId(), json(managedWf));
+            return created("/admin/workflows/"+managedWf.getId(), jsonPrinter.json(managedWf));
         } catch (JsonParseException ex) {
             return badRequest("Can't parse Json: " + ex.getMessage());
         }
@@ -52,7 +54,7 @@ public class WorkflowsAdmin extends AbstractApiBean {
     @GET
     public Response listWorkflows() {
         return ok( workflows.listWorkflows().stream()
-                            .map(wf->brief.json(wf)).collect(toJsonArray()) );
+                            .map(wf->jsonPrinter.brief.json(wf)).collect(jsonPrinter.toJsonArray()) );
     }
     
     @Path("default/{triggerType}")
@@ -82,7 +84,7 @@ public class WorkflowsAdmin extends AbstractApiBean {
         for ( TriggerType tp : TriggerType.values() ) {
             bld.add(tp.name(), 
                     workflows.getDefaultWorkflow(tp)
-                             .map(wf->(JsonValue)brief.json(wf).build())
+                             .map(wf->(JsonValue)jsonPrinter.brief.json(wf).build())
                              .orElse(JsonValue.NULL));
         }
         return ok(bld);
@@ -93,7 +95,7 @@ public class WorkflowsAdmin extends AbstractApiBean {
     public Response getDefault(@PathParam("triggerType") String triggerType) {
         try {
             return workflows.getDefaultWorkflow(TriggerType.valueOf(triggerType))
-                            .map( wf -> ok(json(wf)) )
+                            .map( wf -> ok(jsonPrinter.json(wf)) )
                             .orElse( notFound("no default workflow") );
         } catch ( IllegalArgumentException iae ) {
             return badRequest("Unknown trigger type '" + triggerType + "'. Available triggers: " + Arrays.toString(TriggerType.values()) );
@@ -117,7 +119,7 @@ public class WorkflowsAdmin extends AbstractApiBean {
         try {
             long idtf = Long.parseLong(identifier);
             return workflows.getWorkflow(idtf)
-                            .map(wf->ok(json(wf)))
+                            .map(wf->ok(jsonPrinter.json(wf)))
                             .orElse(notFound("Can't find workflow with id " + identifier));
         } catch (NumberFormatException nfe) {
             return badRequest("workflow identifier has to be numeric.");

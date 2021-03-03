@@ -14,6 +14,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.harvard.iq.dataverse.util.json.JsonPrinter;
+
 // ****************************************************************************************
 // The following tests test the setPublicationStatuses method aiming for 100% prime 
 // path coverage. Various combinations of statuses are used to execute and cover every 
@@ -34,6 +36,8 @@ public class SolrSearchResultTest {
     List<String> statuses;
 
     SolrSearchResult solrSearchResult;
+    
+    JsonPrinter jsonPrinter=null;
 
     @Before
     public void before() {
@@ -45,6 +49,7 @@ public class SolrSearchResultTest {
         this.invalidFlag = "abc";
         this.statuses = new ArrayList<String>();
         this.solrSearchResult = new SolrSearchResult("myQuery", "myName");
+        jsonPrinter = new JsonPrinter();
     }
 
     @After
@@ -57,6 +62,7 @@ public class SolrSearchResultTest {
         this.invalidFlag = null;
         this.statuses = null;
         this.solrSearchResult = null;
+        this.jsonPrinter=null;
     }
 
     @Test
@@ -233,6 +239,7 @@ public class SolrSearchResultTest {
         boolean showApiUrls = false;
 
         SolrSearchResult result01 = new SolrSearchResult("myQuery", "myName");
+        result01.setJsonPrinter(jsonPrinter);
         result01.setType(SearchConstants.DATAVERSES);
         JsonObjectBuilder actual01 = result01.json(showRelevance, showEntityIds, showApiUrls);
         JsonObject actual = actual01.build();

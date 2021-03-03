@@ -8,7 +8,6 @@ import static edu.harvard.iq.dataverse.dataaccess.DataAccess.getStorageIO;
 import edu.harvard.iq.dataverse.dataaccess.DataAccessOption;
 import edu.harvard.iq.dataverse.dataaccess.StorageIO;
 import edu.harvard.iq.dataverse.export.spi.Exporter;
-import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
 import edu.harvard.iq.dataverse.util.json.JsonPrinter;
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,6 +30,8 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.inject.Inject;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.MediaType;
@@ -43,30 +44,16 @@ import org.apache.commons.io.IOUtils;
  */
 public class ExportService {
 
+    @Inject JsonPrinter jsonPrinter;
+    
     private static ExportService service;
     private ServiceLoader<Exporter> loader;
-    static SettingsServiceBean settingsService;
 
     private ExportService() {
         loader = ServiceLoader.load(Exporter.class);
     }
 
-    /**
-     * @deprecated Use `getInstance(SettingsServiceBean settingsService)`
-     * instead. For privacy reasons, we need to pass in settingsService so that
-     * we can make a decision whether not not to exclude email addresses. No new
-     * code should call this method and it would be nice to remove calls from
-     * existing code.
-     */
-    @Deprecated
     public static synchronized ExportService getInstance() {
-        return getInstance(null);
-    }
-
-    public static synchronized ExportService getInstance(SettingsServiceBean settingsService) {
-        ExportService.settingsService = settingsService;
-        // We pass settingsService into the JsonPrinter so it can check the :ExcludeEmailFromExport setting in calls to JsonPrinter.jsonAsDatasetDto().
-        JsonPrinter.setSettingsService(settingsService);
         if (service == null) {
             service = new ExportService();
         }
@@ -75,7 +62,7 @@ public class ExportService {
 
     public List< String[]> getExportersLabels() {
         List<String[]> retList = new ArrayList<>();
-        Iterator<Exporter> exporters = ExportService.getInstance(null).loader.iterator();
+        Iterator<Exporter> exporters = ExportService.getInstance().loader.iterator();
         while (exporters.hasNext()) {
             Exporter e = exporters.next();
             String[] temp = new String[2];
@@ -157,7 +144,7 @@ public class ExportService {
                 throw new ExportException("No released version for dataset " + dataset.getGlobalId().toString());
             }
 
-            final JsonObjectBuilder datasetAsJsonBuilder = JsonPrinter.jsonAsDatasetDto(releasedVersion);
+            final JsonObjectBuilder datasetAsJsonBuilder = jsonPrinter.jsonAsDatasetDto(releasedVersion);
             JsonObject datasetAsJson = datasetAsJsonBuilder.build();
 
             Iterator<Exporter> exporters = loader.iterator();
@@ -208,7 +195,7 @@ public class ExportService {
                     if (releasedVersion == null) {
                         throw new IllegalStateException("No Released Version");
                     }
-                    final JsonObjectBuilder datasetAsJsonBuilder = JsonPrinter.jsonAsDatasetDto(releasedVersion);
+                    final JsonObjectBuilder datasetAsJsonBuilder = jsonPrinter.jsonAsDatasetDto(releasedVersion);
                     cacheExport(releasedVersion, formatName, datasetAsJsonBuilder.build(), e);
                 }
             }

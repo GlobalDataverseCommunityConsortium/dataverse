@@ -42,6 +42,7 @@ import edu.harvard.iq.dataverse.dataaccess.StorageIO;
 import edu.harvard.iq.dataverse.engine.command.impl.AbstractSubmitToArchiveCommand;
 import edu.harvard.iq.dataverse.engine.command.impl.PublishDataverseCommand;
 import edu.harvard.iq.dataverse.settings.Setting;
+import edu.harvard.iq.dataverse.util.json.JsonPrinter;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
@@ -53,7 +54,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
 import static edu.harvard.iq.dataverse.util.json.NullSafeJsonBuilder.jsonObjectBuilder;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.*;
 
 import java.io.InputStream;
 import java.io.StringReader;
@@ -152,7 +152,7 @@ public class Admin extends AbstractApiBean {
         ExplicitGroupServiceBean explicitGroupService;
         @EJB
         BannerMessageServiceBean bannerMessageService;
-        
+        @Inject JsonPrinter jsonPrinter;
 
 	// Make the session available
 	@Inject
@@ -211,14 +211,14 @@ public class Admin extends AbstractApiBean {
 	public Response listAuthProviderFactories() {
 		return ok(authSvc.listProviderFactories().stream()
 				.map(f -> jsonObjectBuilder().add("alias", f.getAlias()).add("info", f.getInfo()))
-				.collect(toJsonArray()));
+				.collect(jsonPrinter.toJsonArray()));
 	}
 
 	@Path("authenticationProviders")
 	@GET
 	public Response listAuthProviders() {
 		return ok(em.createNamedQuery("AuthenticationProviderRow.findAll", AuthenticationProviderRow.class)
-				.getResultList().stream().map(r -> json(r)).collect(toJsonArray()));
+				.getResultList().stream().map(r -> jsonPrinter.json(r)).collect(jsonPrinter.toJsonArray()));
 	}
 
 	@Path("authenticationProviders")
@@ -237,7 +237,7 @@ public class Admin extends AbstractApiBean {
 				authProvidersRegistrationSvc.deregisterProvider(provider.getId());
 				authProvidersRegistrationSvc.registerProvider(provider);
 			}
-			return created("/api/admin/authenticationProviders/" + managed.getId(), json(managed));
+			return created("/api/admin/authenticationProviders/" + managed.getId(), jsonPrinter.json(managed));
 		} catch (AuthorizationSetupException e) {
 			return error(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage());
 		}
@@ -247,7 +247,7 @@ public class Admin extends AbstractApiBean {
 	@GET
 	public Response showProvider(@PathParam("id") String id) {
 		AuthenticationProviderRow row = em.find(AuthenticationProviderRow.class, id);
-		return (row != null) ? ok(json(row))
+		return (row != null) ? ok(jsonPrinter.json(row))
 				: error(Status.NOT_FOUND, "Can't find authetication provider with id '" + id + "'");
 	}
 
@@ -336,7 +336,7 @@ public class Admin extends AbstractApiBean {
     public Response getAuthenticatedUserByIdentifier(@PathParam("identifier") String identifier) {
         AuthenticatedUser authenticatedUser = authSvc.getAuthenticatedUser(identifier);
         if (authenticatedUser != null) {
-            return ok(json(authenticatedUser));
+            return ok(jsonPrinter.json(authenticatedUser));
         }
         return error(Response.Status.BAD_REQUEST, "User " + identifier + " not found.");
     }
@@ -391,7 +391,7 @@ public class Admin extends AbstractApiBean {
 			Dataverse dataverse = dataverseSvc.find(id);
 			if (dataverse != null) {
 				AuthenticatedUser authenticatedUser = dataverse.getCreator();
-				return ok(json(execCommand(
+				return ok(jsonPrinter.json(execCommand(
 						new PublishDataverseCommand(createDataverseRequest(authenticatedUser), dataverse))));
 			} else {
 				return error(Status.BAD_REQUEST, "Could not find dataverse with id " + id);
@@ -415,7 +415,7 @@ public class Admin extends AbstractApiBean {
 		}
 		JsonArrayBuilder userArray = Json.createArrayBuilder();
 		authSvc.findAllAuthenticatedUsers().stream().forEach((user) -> {
-			userArray.add(json(user));
+			userArray.add(jsonPrinter.json(user));
 		});
 		return ok(userArray);
 	}
@@ -475,7 +475,7 @@ public class Admin extends AbstractApiBean {
 		boolean generateUniqueIdentifier = true;
 		AuthenticatedUser authenticatedUser = authSvc.createAuthenticatedUser(userRecordId,
 				proposedAuthenticatedUserIdentifier, userDisplayInfo, true);
-		return ok(json(authenticatedUser));
+		return ok(jsonPrinter.json(authenticatedUser));
 	}
 
         //TODO: Delete this endpoint after 4.9.3. Was updated with change in docs. --MAD
@@ -871,7 +871,7 @@ public class Admin extends AbstractApiBean {
 		ActionLogRecord alr = new ActionLogRecord(ActionLogRecord.ActionType.Admin, "createBuiltInRole")
 				.setInfo(roleDto.getAlias() + ":" + roleDto.getDescription());
 		try {
-			return ok(json(rolesSvc.save(roleDto.asRole())));
+			return ok(jsonPrinter.json(rolesSvc.save(roleDto.asRole())));
 		} catch (Exception e) {
 			alr.setActionResult(ActionLogRecord.Result.InternalError);
 			alr.setInfo(alr.getInfo() + "// " + e.getMessage());
@@ -885,7 +885,7 @@ public class Admin extends AbstractApiBean {
 	@GET
 	public Response listBuiltinRoles() {
 		try {
-			return ok(rolesToJson(rolesSvc.findBuiltinRoles()));
+			return ok(jsonPrinter.rolesToJson(rolesSvc.findBuiltinRoles()));
 		} catch (Exception e) {
 			return error(Response.Status.INTERNAL_SERVER_ERROR, e.getMessage());
 		}
@@ -1124,7 +1124,7 @@ public class Admin extends AbstractApiBean {
 	public Response getAssignmentsFor(@PathParam("raIdtf") String raIdtf) {
 
 		JsonArrayBuilder arr = Json.createArrayBuilder();
-		roleAssigneeSvc.getAssignmentsFor(raIdtf).forEach(a -> arr.add(json(a)));
+		roleAssigneeSvc.getAssignmentsFor(raIdtf).forEach(a -> arr.add(jsonPrinter.json(a)));
 
 		return ok(arr);
 	}
@@ -1203,7 +1203,7 @@ public class Admin extends AbstractApiBean {
 				User aUser = findUserOrDie();
 				JsonObjectBuilder bld = Json.createObjectBuilder();
 				bld.add("user", aUser.getIdentifier());
-				bld.add("permissions", json(permissionSvc.permissionsFor(createDataverseRequest(aUser), dvObj)));
+				bld.add("permissions", jsonPrinter.json(permissionSvc.permissionsFor(createDataverseRequest(aUser), dvObj)));
 				return ok(bld);
 
 			} catch (WrappedResponse wr) {
@@ -1219,7 +1219,7 @@ public class Admin extends AbstractApiBean {
 	@GET
 	public Response findRoleAssignee(@PathParam("idtf") String idtf) {
 		RoleAssignee ra = roleAssigneeSvc.getRoleAssignee(idtf);
-		return (ra == null) ? notFound("Role Assignee '" + idtf + "' not found.") : ok(json(ra.getDisplayInfo()));
+		return (ra == null) ? notFound("Role Assignee '" + idtf + "' not found.") : ok(jsonPrinter.json(ra.getDisplayInfo()));
 	}
 
 	@Path("datasets/integrity/{datasetVersionId}/fixmissingunf")
@@ -1916,7 +1916,7 @@ public class Admin extends AbstractApiBean {
 
         return ok(bannerMessageService.findAllBannerMessages().stream()
                 .map(m -> jsonObjectBuilder().add("id", m.getId()).add("displayValue", m.getDisplayValue()))
-                .collect(toJsonArray()));
+                .collect(jsonPrinter.toJsonArray()));
 
     }
     

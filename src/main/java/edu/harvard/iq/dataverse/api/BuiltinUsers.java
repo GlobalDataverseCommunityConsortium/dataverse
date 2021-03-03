@@ -11,12 +11,15 @@ import edu.harvard.iq.dataverse.authorization.providers.builtin.PasswordEncrypti
 import edu.harvard.iq.dataverse.authorization.users.ApiToken;
 import edu.harvard.iq.dataverse.authorization.users.AuthenticatedUser;
 import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
+import edu.harvard.iq.dataverse.util.json.JsonPrinter;
+
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.GET;
@@ -27,10 +30,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import java.util.Date;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.json;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.json;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.json;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.json;
 
 /**
  * REST API bean for managing {@link BuiltinUser}s.
@@ -47,6 +46,8 @@ public class BuiltinUsers extends AbstractApiBean {
     @EJB
     protected BuiltinUserServiceBean builtinUserSvc;
 
+    @Inject JsonPrinter jsonPrinter;
+    
     @GET
     @Path("{username}/api-token")
     public Response getApiToken( @PathParam("username") String username, @QueryParam("password") String password ) {
@@ -184,8 +185,8 @@ public class BuiltinUsers extends AbstractApiBean {
             authSvc.save(token);
 
             JsonObjectBuilder resp = Json.createObjectBuilder();
-            resp.add("user", json(user));
-            resp.add("authenticatedUser", json(au));
+            resp.add("user", jsonPrinter.json(user));
+            resp.add("authenticatedUser", jsonPrinter.json(au));
             resp.add("apiToken", token.getTokenString());
             
             alr.setInfo("builtinUser:" + user.getUserName() + " authenticatedUser:" + au.getIdentifier() );

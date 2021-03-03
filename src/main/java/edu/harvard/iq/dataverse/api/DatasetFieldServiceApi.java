@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.validation.ConstraintViolation;
@@ -35,7 +36,8 @@ import javax.ws.rs.core.Response;
 
 import edu.harvard.iq.dataverse.util.BundleUtil;
 import org.apache.commons.lang.StringUtils;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.asJsonArray;
+
+import edu.harvard.iq.dataverse.util.json.JsonPrinter;
 import edu.harvard.iq.dataverse.util.json.NullSafeJsonBuilder;
 
 import java.util.logging.Level;
@@ -67,6 +69,8 @@ public class DatasetFieldServiceApi extends AbstractApiBean {
 
     @EJB
     ControlledVocabularyValueServiceBean controlledVocabularyValueService;
+    
+    @Inject JsonPrinter jsonPrinter;
 
     private static final Logger logger = Logger.getLogger(DatasetFieldServiceApi.class.getName());
     
@@ -91,12 +95,12 @@ public class DatasetFieldServiceApi extends AbstractApiBean {
             for ( DatasetFieldType dt : requiredFields ) {
                 requiredFieldNames.add( dt.getName() );
             }
-            return ok( Json.createObjectBuilder().add("haveParents", asJsonArray(listOfIsHasParentsTrue))
-                    .add("noParents", asJsonArray(listOfIsHasParentsFalse))
-                    .add("allowsMultiples", asJsonArray(listOfIsAllowsMultiplesTrue))
-                    .add("allowsMultiples", asJsonArray(listOfIsAllowsMultiplesTrue))
-                    .add("doesNotAllowMultiples", asJsonArray(listOfIsAllowsMultiplesFalse))
-                    .add("required", asJsonArray(requiredFieldNames))
+            return ok( Json.createObjectBuilder().add("haveParents", jsonPrinter.asJsonArray(listOfIsHasParentsTrue))
+                    .add("noParents", jsonPrinter.asJsonArray(listOfIsHasParentsFalse))
+                    .add("allowsMultiples", jsonPrinter.asJsonArray(listOfIsAllowsMultiplesTrue))
+                    .add("allowsMultiples", jsonPrinter.asJsonArray(listOfIsAllowsMultiplesTrue))
+                    .add("doesNotAllowMultiples", jsonPrinter.asJsonArray(listOfIsAllowsMultiplesFalse))
+                    .add("required", jsonPrinter.asJsonArray(requiredFieldNames))
             );
             
         } catch (EJBException ex) {

@@ -114,7 +114,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import javax.ws.rs.core.StreamingOutput;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.json;
 import java.net.URISyntaxException;
 import javax.ws.rs.RedirectionException;
 import javax.ws.rs.core.MediaType;
@@ -181,6 +180,7 @@ public class Access extends AbstractApiBean {
     PermissionsWrapper permissionsWrapper;
     @Inject
     MakeDataCountLoggingServiceBean mdcLogService;
+    @Inject JsonPrinter jsonPrinter;
     
     
     private static final String API_KEY_HEADER = "X-Dataverse-key";    
@@ -1176,7 +1176,7 @@ public class Access extends AbstractApiBean {
         AuxiliaryFile saved = auxiliaryFileService.processAuxiliaryFile(fileInputStream, dataFile, formatTag, formatVersion, origin, isPublic);
       
         if (saved!=null) {
-            return ok(json(saved));
+            return ok(jsonPrinter.json(saved));
         } else {
             return error(BAD_REQUEST, "Error saving Auxiliary file.");
         }
@@ -1336,7 +1336,7 @@ public class Access extends AbstractApiBean {
         JsonArrayBuilder userArray = Json.createArrayBuilder();
 
         for (AuthenticatedUser au : requesters) {
-            userArray.add(json(au));
+            userArray.add(jsonPrinter.json(au));
         }
 
         return ok(userArray);

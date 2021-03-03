@@ -15,6 +15,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
@@ -23,6 +25,8 @@ import static edu.harvard.iq.dataverse.util.json.NullSafeJsonBuilder.jsonObjectB
 
 public class SolrSearchResult {
 
+    @Inject JsonPrinter jsonPrinter;
+    
     private static final Logger logger = Logger.getLogger(SolrSearchResult.class.getCanonicalName());
 
     private String id;
@@ -535,7 +539,7 @@ public class SolrSearchResult {
                  * MD5 or SHA-1 in "checksum".
                  */
                 .add("md5", getFileMd5())
-                .add("checksum", JsonPrinter.getChecksumTypeAndValue(getFileChecksumType(), getFileChecksumValue()))
+                .add("checksum", jsonPrinter.getChecksumTypeAndValue(getFileChecksumType(), getFileChecksumValue()))
                 .add("unf", getUnf())
                 .add("file_persistent_id", this.filePersistentId)
                 .add("dataset_name", datasetName)
@@ -1204,5 +1208,10 @@ public class SolrSearchResult {
     
     public void setNameOfDataverse(String id) {
         this.nameOfDataverse = id;
+    }
+    
+    //Used in tests only
+    public void setJsonPrinter(JsonPrinter jp) {
+        jsonPrinter=jp;
     }
 }

@@ -11,9 +11,11 @@ import edu.harvard.iq.dataverse.authorization.users.AuthenticatedUser;
 import edu.harvard.iq.dataverse.authorization.users.User;
 import edu.harvard.iq.dataverse.engine.command.impl.ChangeUserIdentifierCommand;
 import edu.harvard.iq.dataverse.engine.command.impl.MergeInAccountCommand;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.json;
+import edu.harvard.iq.dataverse.util.json.JsonPrinter;
+
 import java.util.logging.Logger;
 import javax.ejb.Stateless;
+import javax.inject.Inject;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -28,6 +30,8 @@ import javax.ws.rs.core.Response;
 @Stateless
 @Path("users")
 public class Users extends AbstractApiBean {
+    
+    @Inject JsonPrinter jsonPrinter;
     
     private static final Logger logger = Logger.getLogger(Users.class.getName());
     
@@ -186,7 +190,7 @@ public class Users extends AbstractApiBean {
         if (authenticatedUser == null) {
             return error(Response.Status.BAD_REQUEST, "User with token " + tokenFromRequestAPI + " not found.");
         } else {
-            return ok(json(authenticatedUser));
+            return ok(jsonPrinter.json(authenticatedUser));
         }
 
     }

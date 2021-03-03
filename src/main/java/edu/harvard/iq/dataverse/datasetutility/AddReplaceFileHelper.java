@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import javax.inject.Inject;
 import javax.json.JsonObjectBuilder;
 import javax.validation.ConstraintViolation;
 import javax.ws.rs.core.Response;
@@ -93,6 +94,8 @@ import org.ocpsoft.common.util.Strings;
  * @author rmp553
  */
 public class AddReplaceFileHelper{
+    
+    @Inject JsonPrinter jsonPrinter;
     
     private static final Logger logger = Logger.getLogger(AddReplaceFileHelper.class.getCanonicalName());
     
@@ -1859,7 +1862,7 @@ public class AddReplaceFileHelper{
             throw new NoFilesException("newlyAddedFiles is empty!");
         }
         
-        return JsonPrinter.jsonDataFileList(newlyAddedFiles);
+        return jsonPrinter.jsonDataFileList(newlyAddedFiles);
     }
     
     

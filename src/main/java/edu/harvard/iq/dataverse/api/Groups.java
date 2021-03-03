@@ -8,13 +8,14 @@ import edu.harvard.iq.dataverse.authorization.groups.impl.shib.ShibGroup;
 import edu.harvard.iq.dataverse.authorization.groups.impl.shib.ShibGroupProvider;
 import edu.harvard.iq.dataverse.util.json.JsonParseException;
 import edu.harvard.iq.dataverse.util.json.JsonParser;
+import edu.harvard.iq.dataverse.util.json.JsonPrinter;
 
 import javax.ejb.Stateless;
+import javax.inject.Inject;
 import javax.interceptor.Interceptors;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
-import static edu.harvard.iq.dataverse.util.json.JsonPrinter.*;
 
 import java.util.Optional;
 import java.util.logging.Level;
@@ -40,6 +41,8 @@ import static org.apache.commons.lang.StringUtils.isNumeric;
 public class Groups extends AbstractApiBean {
     private static final Logger logger = Logger.getLogger(Groups.class.getName());
 
+    @Inject JsonPrinter jsonPrinter;
+    
     private IpGroupProvider ipGroupPrv;
     private ShibGroupProvider shibGroupPrv;
     private MailDomainGroupProvider mailDomainGroupPrv;
@@ -71,7 +74,7 @@ public class Groups extends AbstractApiBean {
                             grp.getPersistedGroupAlias()==null ? "ipGroup" : grp.getPersistedGroupAlias()));
 
             grp = ipGroupPrv.store(grp);
-            return created("/groups/ip/" + grp.getPersistedGroupAlias(), json(grp) );
+            return created("/groups/ip/" + grp.getPersistedGroupAlias(), jsonPrinter.json(grp) );
 
         } catch ( Exception e ) {
             logger.log( Level.WARNING, "Error while storing a new IP group: " + e.getMessage(), e);
@@ -101,7 +104,7 @@ public class Groups extends AbstractApiBean {
             grp.setGroupProvider( ipGroupPrv );
             grp.setPersistedGroupAlias( groupName );
             grp = ipGroupPrv.store(grp);
-            return created("/groups/ip/" + grp.getPersistedGroupAlias(), json(grp) );
+            return created("/groups/ip/" + grp.getPersistedGroupAlias(), jsonPrinter.json(grp) );
 
         } catch ( Exception e ) {
             logger.log( Level.WARNING, "Error while storing a new IP group: " + e.getMessage(), e);
@@ -114,7 +117,7 @@ public class Groups extends AbstractApiBean {
     @Path("ip")
     public Response listIpGroups() {
         return ok( ipGroupPrv.findGlobalGroups()
-                             .stream().map(g->json(g)).collect(toJsonArray()) );
+                             .stream().map(g->jsonPrinter.json(g)).collect(jsonPrinter.toJsonArray()) );
     }
 
     @GET
@@ -127,7 +130,7 @@ public class Groups extends AbstractApiBean {
             grp = ipGroupPrv.get(groupIdtf);
         }
 
-        return (grp == null) ? notFound( "Group " + groupIdtf + " not found") : ok(json(grp));
+        return (grp == null) ? notFound( "Group " + groupIdtf + " not found") : ok(jsonPrinter.json(grp));
     }
 
     @DELETE
@@ -165,7 +168,7 @@ public class Groups extends AbstractApiBean {
     public Response listShibGroups() {
         JsonArrayBuilder arrBld = Json.createArrayBuilder();
         for (ShibGroup g : shibGroupPrv.findGlobalGroups()) {
-            arrBld.add(json(g));
+            arrBld.add(jsonPrinter.json(g));
         }
         return ok(arrBld);
     }
@@ -233,7 +236,7 @@ public class Groups extends AbstractApiBean {
         mailDomainGroupPrv.saveOrUpdate(Optional.empty(), grp);
         mailDomainGroupPrv.updateGroups();
 
-        return created("/groups/domain/" + grp.getPersistedGroupAlias(), json(grp) );
+        return created("/groups/domain/" + grp.getPersistedGroupAlias(), jsonPrinter.json(grp) );
     }
     
     /**
@@ -257,21 +260,21 @@ public class Groups extends AbstractApiBean {
         mailDomainGroupPrv.saveOrUpdate(Optional.of(groupAlias), grp);
         mailDomainGroupPrv.updateGroups();
         
-        return created("/groups/domain/" + grp.getPersistedGroupAlias(), json(grp) );
+        return created("/groups/domain/" + grp.getPersistedGroupAlias(), jsonPrinter.json(grp) );
     }
     
     @GET
     @Path("domain")
     public Response listMailDomainGroups() {
         return ok( mailDomainGroupPrv.findGlobalGroups()
-            .stream().map(g->json(g)).collect(toJsonArray()) );
+            .stream().map(g->jsonPrinter.json(g)).collect(jsonPrinter.toJsonArray()) );
     }
     
     @GET
     @Path("domain/{groupAlias}")
     public Response getMailDomainGroup(@PathParam("groupAlias") String groupAlias) {
         MailDomainGroup grp = mailDomainGroupPrv.get(groupAlias);
-        return (grp == null) ? notFound( "Group " + groupAlias + " not found") : ok(json(grp));
+        return (grp == null) ? notFound( "Group " + groupAlias + " not found") : ok(jsonPrinter.json(grp));
     }
     
     @DELETE
