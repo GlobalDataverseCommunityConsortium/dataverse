@@ -1399,9 +1399,6 @@ public class DatasetVersion implements Serializable {
     
     // TODO: Consider renaming this method since it's also used for getting the "provider" for Schema.org JSON-LD.
     public String getRootDataverseNameforCitation(){
-        //if(settings != null) {
-       // logger.info(brandingUtil.getInstitutionName());
-       // }
                     //Get root dataverse name for Citation
         Dataverse root = this.getDataset().getOwner();
         while (root.getOwner() != null) {
