@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.ejb.EJB;
 import javax.faces.view.ViewScoped;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.mail.internet.InternetAddress;
 import org.json.JSONArray;
@@ -40,6 +41,12 @@ public class SettingsWrapper implements java.io.Serializable {
     @EJB
     SystemConfig systemConfig;
 
+    @Inject
+    BrandingUtil brandingUtil;
+    
+    @Inject
+    MailUtil mailUtil;
+    
     private Map<String, String> settingsMap;
     
     // Related to a specific setting for guide urls
@@ -172,14 +179,14 @@ public class SettingsWrapper implements java.io.Serializable {
     
     public String getSupportTeamName() {
         String systemEmail = getValueForKey(SettingsServiceBean.Key.SystemEmail);
-        InternetAddress systemAddress = MailUtil.parseSystemAddress(systemEmail);
-        return BrandingUtil.getSupportTeamName(systemAddress, dataverseService.findRootDataverse().getName());
+        InternetAddress systemAddress = mailUtil.parseSystemAddress(systemEmail);
+        return brandingUtil.getSupportTeamName(systemAddress, dataverseService.findRootDataverse().getName());
     }
     
     public String getSupportTeamEmail() {
         String systemEmail = getValueForKey(SettingsServiceBean.Key.SystemEmail);
-        InternetAddress systemAddress = MailUtil.parseSystemAddress(systemEmail);        
-        return BrandingUtil.getSupportTeamEmailAddress(systemAddress) != null ? BrandingUtil.getSupportTeamEmailAddress(systemAddress) : BrandingUtil.getSupportTeamName(systemAddress, dataverseService.findRootDataverse().getName());
+        InternetAddress systemAddress = mailUtil.parseSystemAddress(systemEmail);        
+        return brandingUtil.getSupportTeamEmailAddress(systemAddress) != null ? brandingUtil.getSupportTeamEmailAddress(systemAddress) : brandingUtil.getSupportTeamName(systemAddress, dataverseService.findRootDataverse().getName());
     }
     
     public Integer getUploadMethodsCount() {

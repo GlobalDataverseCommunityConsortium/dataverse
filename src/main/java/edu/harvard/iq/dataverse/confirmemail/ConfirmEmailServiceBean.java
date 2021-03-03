@@ -18,6 +18,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.NonUniqueResultException;
@@ -43,6 +44,8 @@ public class ConfirmEmailServiceBean {
     SystemConfig systemConfig;
 
     @EJB DataverseServiceBean dataverseService;
+    
+    @Inject MailUtil mailUtil;
 
     @PersistenceContext(unitName = "VDCNet-ejbPU")
     private EntityManager em;
@@ -128,7 +131,7 @@ public class ConfirmEmailServiceBean {
                     // FIXME: consider refactoring this into MailServiceBean.sendNotificationEmail. CONFIRMEMAIL may be the only type where we don't want an in-app notification.
                     UserNotification userNotification = new UserNotification();
                     userNotification.setType(UserNotification.Type.CONFIRMEMAIL);
-                    String subject = MailUtil.getSubjectTextBasedOnNotification(userNotification, rootDataverseName, null);
+                    String subject = mailUtil.getSubjectTextBasedOnNotification(userNotification, rootDataverseName, null);
                     logger.fine("sending email to " + toAddress + " with this subject: " + subject);
                     mailService.sendSystemEmail(toAddress, subject, messageBody);
                 }

@@ -3,6 +3,7 @@ package edu.harvard.iq.dataverse;
 import edu.harvard.iq.dataverse.util.MarkupChecker;
 import edu.harvard.iq.dataverse.DatasetFieldType.FieldType;
 import edu.harvard.iq.dataverse.branding.BrandingUtil;
+import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
 import edu.harvard.iq.dataverse.util.FileUtil;
 import edu.harvard.iq.dataverse.util.StringUtil;
 import edu.harvard.iq.dataverse.util.SystemConfig;
@@ -20,6 +21,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import javax.ejb.EJB;
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
@@ -60,6 +63,8 @@ import org.apache.commons.lang.StringUtils;
         uniqueConstraints = @UniqueConstraint(columnNames = {"dataset_id,versionnumber,minorversionnumber"}))
 @ValidateVersionNote(versionNote = "versionNote", versionState = "versionState")
 public class DatasetVersion implements Serializable {
+   
+    @Inject BrandingUtil brandingUtil;
 
     private static final Logger logger = Logger.getLogger(DatasetVersion.class.getCanonicalName());
 
@@ -1394,6 +1399,9 @@ public class DatasetVersion implements Serializable {
     
     // TODO: Consider renaming this method since it's also used for getting the "provider" for Schema.org JSON-LD.
     public String getRootDataverseNameforCitation(){
+        //if(settings != null) {
+       // logger.info(brandingUtil.getInstitutionName());
+       // }
                     //Get root dataverse name for Citation
         Dataverse root = this.getDataset().getOwner();
         while (root.getOwner() != null) {
@@ -1892,7 +1900,7 @@ public class DatasetVersion implements Serializable {
                 .add("url", SystemConfig.getDataverseSiteUrlStatic())
         );
 
-        String installationBrandName = BrandingUtil.getInstallationBrandName(getRootDataverseNameforCitation());
+        String installationBrandName = brandingUtil.getInstallationBrandName(getRootDataverseNameforCitation());
         /**
          * Both "publisher" and "provider" are included but they have the same
          * values. Some services seem to prefer one over the other.
@@ -1965,6 +1973,11 @@ public class DatasetVersion implements Serializable {
 
     public String getLocaleLastUpdateTime() {
         return DateUtil.formatDate(new Timestamp(lastUpdateTime.getTime()));
+    }
+    
+    //Testing only
+    public void setBrandingUtil(BrandingUtil b) {
+        brandingUtil=b;
     }
 
 }

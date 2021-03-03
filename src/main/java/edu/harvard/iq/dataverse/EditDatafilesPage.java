@@ -128,6 +128,7 @@ public class EditDatafilesPage implements java.io.Serializable {
     @Inject ProvPopupFragmentBean provPopupFragmentBean;
     @Inject
     SettingsWrapper settingsWrapper;
+    @Inject BrandingUtil brandingUtil;
 
     private Dataset dataset = new Dataset();
     
@@ -942,7 +943,7 @@ public class EditDatafilesPage implements java.io.Serializable {
                 logger.log(Level.INFO, "Couldn''t save dataset: {0}", "It is locked."
                         + "");
                 String rootDataverseName = dataverseService.findRootDataverse().getName();
-                JH.addMessage(FacesMessage.SEVERITY_FATAL, getBundleString("dataset.locked.editInProgress.message"),BundleUtil.getStringFromBundle("dataset.locked.editInProgress.message.details", Arrays.asList(BrandingUtil.getSupportTeamName(null, rootDataverseName))));
+                JH.addMessage(FacesMessage.SEVERITY_FATAL, getBundleString("dataset.locked.editInProgress.message"),BundleUtil.getStringFromBundle("dataset.locked.editInProgress.message.details", Arrays.asList(brandingUtil.getSupportTeamName(null, rootDataverseName))));
                 return null;
             }
         }

@@ -7,14 +7,25 @@ import static edu.harvard.iq.dataverse.settings.SettingsServiceBean.Key.SystemEm
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
+
+import javax.ejb.Stateless;
+import javax.inject.Inject;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 
+@Stateless
 public class MailUtil {
 
+    @Inject BrandingUtil brandingUtil;
+    
     private static final Logger logger = Logger.getLogger(MailUtil.class.getCanonicalName());
 
-    public static InternetAddress parseSystemAddress(String systemEmail) {
+    //Constructor for testing
+    public MailUtil(BrandingUtil b) {
+        brandingUtil=b;
+    }
+    
+    public InternetAddress parseSystemAddress(String systemEmail) {
         if (systemEmail != null) {
             try {
                 InternetAddress parsedSystemEmail = new InternetAddress(systemEmail);
@@ -29,8 +40,8 @@ public class MailUtil {
         return null;
     }
 
-    public static String getSubjectTextBasedOnNotification(UserNotification userNotification, String rootDataverseName, Object objectOfNotification) {
-        List<String> rootDvNameAsList = Arrays.asList(BrandingUtil.getInstallationBrandName(rootDataverseName));
+    public String getSubjectTextBasedOnNotification(UserNotification userNotification, String rootDataverseName, Object objectOfNotification) {
+        List<String> rootDvNameAsList = Arrays.asList(brandingUtil.getInstallationBrandName(rootDataverseName));
         switch (userNotification.getType()) {
             case ASSIGNROLE:
                 return BundleUtil.getStringFromBundle("notification.email.assign.role.subject", rootDvNameAsList);

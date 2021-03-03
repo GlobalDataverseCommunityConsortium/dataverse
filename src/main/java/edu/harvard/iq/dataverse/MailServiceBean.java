@@ -31,6 +31,7 @@ import java.util.logging.Logger;
 import javax.annotation.Resource;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.inject.Inject;
 import javax.mail.Address;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -67,6 +68,9 @@ public class MailServiceBean implements java.io.Serializable {
     GroupServiceBean groupService;
     @EJB
     ConfirmEmailServiceBean confirmEmailService;
+    @Inject 
+    BrandingUtil brandingUtil;
+    @Inject MailUtil mailUtil;
     
     private static final Logger logger = Logger.getLogger(MailServiceBean.class.getCanonicalName());
 
@@ -125,8 +129,8 @@ public class MailServiceBean implements java.io.Serializable {
         InternetAddress systemAddress = getSystemAddress(); 
         
         String body = messageText
-                + (isHtmlContent ? BundleUtil.getStringFromBundle("notification.email.closing.html", Arrays.asList(BrandingUtil.getSupportTeamEmailAddress(systemAddress), BrandingUtil.getSupportTeamName(systemAddress, rootDataverseName)))
-                        : BundleUtil.getStringFromBundle("notification.email.closing", Arrays.asList(BrandingUtil.getSupportTeamEmailAddress(systemAddress), BrandingUtil.getSupportTeamName(systemAddress, rootDataverseName))));
+                + (isHtmlContent ? BundleUtil.getStringFromBundle("notification.email.closing.html", Arrays.asList(brandingUtil.getSupportTeamEmailAddress(systemAddress), brandingUtil.getSupportTeamName(systemAddress, rootDataverseName)))
+                        : BundleUtil.getStringFromBundle("notification.email.closing", Arrays.asList(brandingUtil.getSupportTeamEmailAddress(systemAddress), brandingUtil.getSupportTeamName(systemAddress, rootDataverseName))));
        
         logger.fine("Sending email to " + to + ". Subject: <<<" + subject + ">>>. Body: " + body);
         try {
@@ -173,7 +177,7 @@ public class MailServiceBean implements java.io.Serializable {
     
     private InternetAddress getSystemAddress() {
        String systemEmail =  settingsService.getValueForKey(Key.SystemEmail);
-       return MailUtil.parseSystemAddress(systemEmail);
+       return mailUtil.parseSystemAddress(systemEmail);
     }
 
     //@Resource(name="mail/notifyMailSession")
@@ -246,7 +250,7 @@ public class MailServiceBean implements java.io.Serializable {
            if (objectOfNotification != null){
                String messageText = getMessageTextBasedOnNotification(notification, objectOfNotification, comment, requestor);
                String rootDataverseName = dataverseService.findRootDataverse().getName();
-               String subjectText = MailUtil.getSubjectTextBasedOnNotification(notification, rootDataverseName, objectOfNotification);
+               String subjectText = mailUtil.getSubjectTextBasedOnNotification(notification, rootDataverseName, objectOfNotification);
                if (!(messageText.isEmpty() || subjectText.isEmpty())){
                    retval = sendSystemEmail(emailAddress, subjectText, messageText, isHtmlContent);
                } else {
@@ -500,11 +504,11 @@ public class MailServiceBean implements java.io.Serializable {
                 String rootDataverseName = dataverseService.findRootDataverse().getName();
                 InternetAddress systemAddress = getSystemAddress();
                 String accountCreatedMessage = BundleUtil.getStringFromBundle("notification.email.welcome", Arrays.asList(
-                        BrandingUtil.getInstallationBrandName(rootDataverseName),
+                        brandingUtil.getInstallationBrandName(rootDataverseName),
                         systemConfig.getGuidesBaseUrl(),
                         systemConfig.getGuidesVersion(),
-                        BrandingUtil.getSupportTeamName(systemAddress, rootDataverseName),
-                        BrandingUtil.getSupportTeamEmailAddress(systemAddress)
+                        brandingUtil.getSupportTeamName(systemAddress, rootDataverseName),
+                        brandingUtil.getSupportTeamEmailAddress(systemAddress)
                 ));
                 String optionalConfirmEmailAddon = confirmEmailService.optionalConfirmEmailAddonMsg(userNotification.getUser());
                 accountCreatedMessage += optionalConfirmEmailAddon;

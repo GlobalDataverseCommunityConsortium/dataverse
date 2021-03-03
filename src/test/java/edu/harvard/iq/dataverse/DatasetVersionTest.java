@@ -1,6 +1,8 @@
 package edu.harvard.iq.dataverse;
 
+import edu.harvard.iq.dataverse.branding.BrandingUtil;
 import edu.harvard.iq.dataverse.mocks.MocksFactory;
+import edu.harvard.iq.dataverse.util.MailUtil;
 import edu.harvard.iq.dataverse.util.json.JsonUtil;
 import java.io.StringReader;
 import java.sql.Timestamp;
@@ -39,13 +41,17 @@ public class DatasetVersionTest {
     @AfterClass
     public static void tearDownClass() {
     }
+  
+    private BrandingUtil brandingUtil;
+
+    @After
+    public void tearDown() {
+      this.brandingUtil = null;
+    }
     
     @Before
     public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
+        this.brandingUtil = new BrandingUtil();
     }
 
     @Test
@@ -105,6 +111,7 @@ public class DatasetVersionTest {
         dataset.setAuthority("10.5072/FK2");
         dataset.setIdentifier("LK0D1H");
         DatasetVersion datasetVersion = new DatasetVersion();
+        datasetVersion.setBrandingUtil(brandingUtil);
         datasetVersion.setDataset(dataset);
         datasetVersion.setVersionState(DatasetVersion.VersionState.DRAFT);
         assertEquals("", datasetVersion.getPublicationDateAsString());
@@ -159,6 +166,7 @@ public class DatasetVersionTest {
         dataset.setAuthority("10.5072/FK2");
         dataset.setIdentifier("LK0D1H");
         DatasetVersion datasetVersion = new DatasetVersion();
+        datasetVersion.setBrandingUtil(brandingUtil);
         datasetVersion.setDataset(dataset);
         datasetVersion.setVersionState(DatasetVersion.VersionState.DRAFT);
         assertEquals("", datasetVersion.getPublicationDateAsString());

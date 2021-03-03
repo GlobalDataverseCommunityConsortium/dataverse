@@ -83,6 +83,10 @@ public class SendFeedbackDialog implements java.io.Serializable {
 
     @Inject
     DataverseSession dataverseSession;
+    
+    @Inject BrandingUtil brandingUtil;
+    
+    @Inject MailUtil mailUtil;
 
     public void setUserEmail(String uEmail) {
         userEmail = uEmail;
@@ -101,7 +105,7 @@ public class SendFeedbackDialog implements java.io.Serializable {
         op2 = new Long(random.nextInt(10));
         userSum = null;
         String systemEmail = settingsService.getValueForKey(SettingsServiceBean.Key.SystemEmail);
-        systemAddress = MailUtil.parseSystemAddress(systemEmail);
+        systemAddress = mailUtil.parseSystemAddress(systemEmail);
     }
 
     public Long getOp1() {
@@ -130,7 +134,7 @@ public class SendFeedbackDialog implements java.io.Serializable {
 
     public String getMessageTo() {
         if (recipient == null) {
-            return BrandingUtil.getSupportTeamName(systemAddress, dataverseService.findRootDataverse().getName());
+            return brandingUtil.getSupportTeamName(systemAddress, dataverseService.findRootDataverse().getName());
         } else if (recipient.isInstanceofDataverse()) {
             return ((Dataverse) recipient).getDisplayName() + " " + BundleUtil.getStringFromBundle("contact.contact");
         } else {
@@ -140,7 +144,7 @@ public class SendFeedbackDialog implements java.io.Serializable {
 
     public String getFormHeader() {
         if (recipient == null) {
-            return BrandingUtil.getContactHeader(systemAddress, dataverseService.findRootDataverse().getName());
+            return brandingUtil.getContactHeader(systemAddress, dataverseService.findRootDataverse().getName());
         } else if (recipient.isInstanceofDataverse()) {
             return BundleUtil.getStringFromBundle("contact.dataverse.header");
         } else {
@@ -200,8 +204,8 @@ public class SendFeedbackDialog implements java.io.Serializable {
     public String sendMessage() {
         // FIXME: move dataverseService.findRootDataverse() to init
         String rootDataverseName = dataverseService.findRootDataverse().getName();
-        String installationBrandName = BrandingUtil.getInstallationBrandName(rootDataverseName);
-        String supportTeamName = BrandingUtil.getSupportTeamName(systemAddress, rootDataverseName);
+        String installationBrandName = brandingUtil.getInstallationBrandName(rootDataverseName);
+        String supportTeamName = brandingUtil.getSupportTeamName(systemAddress, rootDataverseName);
         List<Feedback> feedbacks = FeedbackUtil.gatherFeedback(recipient, dataverseSession, messageSubject, userMessage, systemAddress, userEmail, systemConfig.getDataverseSiteUrl(), installationBrandName, supportTeamName);
         if (feedbacks.isEmpty()) {
             logger.warning("No feedback has been sent!");

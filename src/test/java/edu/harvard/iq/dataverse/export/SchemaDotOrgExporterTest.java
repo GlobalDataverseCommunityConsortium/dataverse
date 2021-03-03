@@ -8,6 +8,7 @@ import edu.harvard.iq.dataverse.DatasetVersion;
 import edu.harvard.iq.dataverse.Dataverse;
 import edu.harvard.iq.dataverse.FileMetadata;
 import edu.harvard.iq.dataverse.TermsOfUseAndAccess;
+import edu.harvard.iq.dataverse.branding.BrandingUtil;
 import edu.harvard.iq.dataverse.mocks.MockDatasetFieldSvc;
 
 import static edu.harvard.iq.dataverse.util.SystemConfig.SITE_URL;
@@ -45,6 +46,7 @@ public class SchemaDotOrgExporterTest {
 
     private final SchemaDotOrgExporter schemaDotOrgExporter;
     MockDatasetFieldSvc datasetFieldTypeSvc = null;
+    private BrandingUtil brandingUtil;
 
     public SchemaDotOrgExporterTest() {
         schemaDotOrgExporter = new SchemaDotOrgExporter();
@@ -217,10 +219,12 @@ public class SchemaDotOrgExporterTest {
         }
         geographicCoverageType.setChildDatasetFieldTypes(geographicCoverageChildTypes);
 
+        this.brandingUtil = new BrandingUtil();
     }
 
     @After
     public void tearDown() {
+        this.brandingUtil = null;
     }
 
     /**
@@ -236,6 +240,7 @@ public class SchemaDotOrgExporterTest {
         JsonObject json1 = jsonReader1.readObject();
         JsonParser jsonParser = new JsonParser(datasetFieldTypeSvc, null, null);
         DatasetVersion version = jsonParser.parseDatasetVersion(json1.getJsonObject("datasetVersion"));
+        version.setBrandingUtil(brandingUtil);
         version.setVersionState(DatasetVersion.VersionState.RELEASED);
         SimpleDateFormat dateFmt = new SimpleDateFormat("yyyyMMdd");
         Date publicationDate = dateFmt.parse("19551105");

@@ -1,16 +1,24 @@
 package edu.harvard.iq.dataverse.branding;
 
+import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
 import edu.harvard.iq.dataverse.util.BundleUtil;
 import java.util.Arrays;
+
+import javax.ejb.Stateless;
+import javax.inject.Inject;
 import javax.mail.internet.InternetAddress;
 
+@Stateless
 public class BrandingUtil {
 
-    public static String getInstallationBrandName(String rootDataverseName) {
+    @Inject
+    SettingsServiceBean settings;
+    
+    public String getInstallationBrandName(String rootDataverseName) {
         return rootDataverseName;
     }
 
-    public static String getSupportTeamName(InternetAddress systemAddress, String rootDataverseName) {
+    public String getSupportTeamName(InternetAddress systemAddress, String rootDataverseName) {
         if (systemAddress != null) {
             String personalName = systemAddress.getPersonal();
             if (personalName != null) {
@@ -24,15 +32,19 @@ public class BrandingUtil {
         return BundleUtil.getStringFromBundle("contact.support", Arrays.asList(saneDefault));
     }
 
-    public static String getSupportTeamEmailAddress(InternetAddress systemAddress) {
+    public String getSupportTeamEmailAddress(InternetAddress systemAddress) {
         if (systemAddress == null) {
             return null;
         }
         return systemAddress.getAddress();
     }
 
-    public static String getContactHeader(InternetAddress systemAddress, String rootDataverseName) {
+    public String getContactHeader(InternetAddress systemAddress, String rootDataverseName) {
         return BundleUtil.getStringFromBundle("contact.header", Arrays.asList(getSupportTeamName(systemAddress, rootDataverseName)));
+    }
+    
+    public String getInstitutionName() {
+        return settings.get(":InstitutionName", "Not Set");
     }
 
 }

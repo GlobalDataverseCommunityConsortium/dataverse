@@ -1,43 +1,62 @@
 package edu.harvard.iq.dataverse.branding;
 
+import edu.harvard.iq.dataverse.DatasetVersionServiceBean;
 import edu.harvard.iq.dataverse.util.BundleUtil;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+
+import javax.inject.Inject;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import static org.junit.Assert.assertEquals;
+
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class BrandingUtilTest {
+    
+    private BrandingUtil brandingUtil;
 
+    @Before
+    public void setUp() {
+      this.brandingUtil = new BrandingUtil();
+      
+    }
+
+    @After
+    public void tearDown() {
+      this.brandingUtil = null;
+    }
+    
     @Test
     public void testGetInstallationBrandName() {
         System.out.println("testGetInstallationBrandName");
-        assertEquals("LibraScholar", BrandingUtil.getInstallationBrandName("LibraScholar"));
-        assertEquals(null, BrandingUtil.getInstallationBrandName(null));// misconfiguration to set to null
-        assertEquals("", BrandingUtil.getInstallationBrandName(""));// misconfiguration to set to empty string
+        assertEquals("LibraScholar", brandingUtil.getInstallationBrandName("LibraScholar"));
+        assertEquals(null, brandingUtil.getInstallationBrandName(null));// misconfiguration to set to null
+        assertEquals("", brandingUtil.getInstallationBrandName(""));// misconfiguration to set to empty string
     }
 
     @Test
     public void testGetSupportTeamName() throws AddressException, UnsupportedEncodingException {
         System.out.println("testGetSupportTeamName");
-        assertEquals("Support", BrandingUtil.getSupportTeamName(null, null));
-        assertEquals("Support", BrandingUtil.getSupportTeamName(null, ""));
-        assertEquals("LibraScholar Support", BrandingUtil.getSupportTeamName(null, "LibraScholar"));
-        assertEquals("LibraScholar Support", BrandingUtil.getSupportTeamName(new InternetAddress("support@librascholar.edu"), "LibraScholar"));
-        assertEquals("LibraScholar Support Team", BrandingUtil.getSupportTeamName(new InternetAddress("support@librascholar.edu", "LibraScholar Support Team"), "LibraScholar"));
-        assertEquals("", BrandingUtil.getSupportTeamName(new InternetAddress("support@librascholar.edu", ""), "LibraScholar")); // misconfiguration to set to empty string
+        assertEquals("Support", brandingUtil.getSupportTeamName(null, null));
+        assertEquals("Support", brandingUtil.getSupportTeamName(null, ""));
+        assertEquals("LibraScholar Support", brandingUtil.getSupportTeamName(null, "LibraScholar"));
+        assertEquals("LibraScholar Support", brandingUtil.getSupportTeamName(new InternetAddress("support@librascholar.edu"), "LibraScholar"));
+        assertEquals("LibraScholar Support Team", brandingUtil.getSupportTeamName(new InternetAddress("support@librascholar.edu", "LibraScholar Support Team"), "LibraScholar"));
+        assertEquals("", brandingUtil.getSupportTeamName(new InternetAddress("support@librascholar.edu", ""), "LibraScholar")); // misconfiguration to set to empty string
     }
 
     @Test
     public void testGetSupportEmailAddress() throws AddressException, UnsupportedEncodingException {
         System.out.println("testGetSupportEmailAddress");
-        assertEquals(null, BrandingUtil.getSupportTeamEmailAddress(null));
-        assertEquals("support@librascholar.edu", BrandingUtil.getSupportTeamEmailAddress(new InternetAddress("support@librascholar.edu")));
-        assertEquals("support@librascholar.edu", BrandingUtil.getSupportTeamEmailAddress(new InternetAddress("support@librascholar.edu", "LibraScholar Support Team")));
-        assertEquals("support@librascholar.edu", BrandingUtil.getSupportTeamEmailAddress(new InternetAddress("support@librascholar.edu", ""))); // misconfiguration to set to empty string but doesn't matter
-        assertEquals(null, BrandingUtil.getSupportTeamEmailAddress(new InternetAddress(null, "LibraScholar Support Team"))); // misconfiguration to set to null
-        assertEquals("", BrandingUtil.getSupportTeamEmailAddress(new InternetAddress("", "LibraScholar Support Team"))); // misconfiguration to set to empty string
+        assertEquals(null, brandingUtil.getSupportTeamEmailAddress(null));
+        assertEquals("support@librascholar.edu", brandingUtil.getSupportTeamEmailAddress(new InternetAddress("support@librascholar.edu")));
+        assertEquals("support@librascholar.edu", brandingUtil.getSupportTeamEmailAddress(new InternetAddress("support@librascholar.edu", "LibraScholar Support Team")));
+        assertEquals("support@librascholar.edu", brandingUtil.getSupportTeamEmailAddress(new InternetAddress("support@librascholar.edu", ""))); // misconfiguration to set to empty string but doesn't matter
+        assertEquals(null, brandingUtil.getSupportTeamEmailAddress(new InternetAddress(null, "LibraScholar Support Team"))); // misconfiguration to set to null
+        assertEquals("", brandingUtil.getSupportTeamEmailAddress(new InternetAddress("", "LibraScholar Support Team"))); // misconfiguration to set to empty string
     }
 
     @Test
@@ -103,7 +122,7 @@ public class BrandingUtilTest {
     @Test
     public void testGetContactHeader() {
         System.out.println("testGetContactHeader");
-        assertEquals("Contact Support", BrandingUtil.getContactHeader(null, null));
+        assertEquals("Contact Support", brandingUtil.getContactHeader(null, null));
     }
 
 }

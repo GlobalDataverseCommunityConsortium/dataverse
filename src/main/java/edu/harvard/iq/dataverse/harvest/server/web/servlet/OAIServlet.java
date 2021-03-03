@@ -54,6 +54,7 @@ import java.util.logging.Logger;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 import javax.ejb.EJB;
+import javax.inject.Inject;
 import javax.mail.internet.InternetAddress;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -83,6 +84,8 @@ public class OAIServlet extends HttpServlet {
     
     @EJB
     SystemConfig systemConfig;
+    
+    @Inject MailUtil mailUtil;
     
     private static final Logger logger = Logger.getLogger("edu.harvard.iq.dataverse.harvest.server.web.servlet.OAIServlet");
     protected HashMap attributesMap = new HashMap();
@@ -179,7 +182,7 @@ public class OAIServlet extends HttpServlet {
         
         String dataverseName = dataverseService.findRootDataverse().getName();
         String repositoryName = StringUtils.isEmpty(dataverseName) || "Root".equals(dataverseName) ? "Test Dataverse OAI Archive" : dataverseName + " Dataverse OAI Archive";
-        InternetAddress internetAddress = MailUtil.parseSystemAddress(settingsService.getValueForKey(SettingsServiceBean.Key.SystemEmail));
+        InternetAddress internetAddress = mailUtil.parseSystemAddress(settingsService.getValueForKey(SettingsServiceBean.Key.SystemEmail));
 
         RepositoryConfiguration repositoryConfiguration = new RepositoryConfiguration()
                 .withRepositoryName(repositoryName)

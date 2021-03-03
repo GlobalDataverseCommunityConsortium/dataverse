@@ -8,6 +8,7 @@ import edu.harvard.iq.dataverse.feedback.Feedback;
 import edu.harvard.iq.dataverse.feedback.FeedbackUtil;
 import java.util.List;
 import javax.ejb.EJB;
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonNumber;
@@ -24,6 +25,8 @@ public class FeedbackApi extends AbstractApiBean {
     @EJB
     DvObjectServiceBean dvObjectSvc;
 
+    @Inject BrandingUtil brandingUtil;
+    
     @POST
     public Response submitFeedback(JsonObject jsonObject) throws AddressException {
         JsonNumber jsonNumber = jsonObject.getJsonNumber("id");
@@ -39,8 +42,8 @@ public class FeedbackApi extends AbstractApiBean {
         String messageSubject = jsonObject.getString("subject");
         String baseUrl = systemConfig.getDataverseSiteUrl();
         String rootDataverseName = dataverseSvc.findRootDataverse().getName();
-        String installationBrandName = BrandingUtil.getInstallationBrandName(rootDataverseName);
-        String supportTeamName = BrandingUtil.getSupportTeamName(systemAddress, rootDataverseName);
+        String installationBrandName = brandingUtil.getInstallationBrandName(rootDataverseName);
+        String supportTeamName = brandingUtil.getSupportTeamName(systemAddress, rootDataverseName);
         JsonArrayBuilder jab = Json.createArrayBuilder();
         List<Feedback> feedbacks = FeedbackUtil.gatherFeedback(recipient, dataverseSession, messageSubject, userMessage, systemAddress, userEmail, baseUrl, installationBrandName, supportTeamName);
         feedbacks.forEach((feedback) -> {
