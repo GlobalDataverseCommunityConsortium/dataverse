@@ -105,22 +105,48 @@ public class WorkflowServiceBean {
      *
      * @param wf the workflow to execute.
      * @param ctxt the context in which the workflow is executed.
+     * @param findDataset 
      * @throws CommandException If the dataset could not be locked.
      */
     //ToDo - should this be @Async? or just the forward() method?
     @Asynchronous
-    public void start(Workflow wf, WorkflowContext ctxt) throws CommandException {
-        
-//        // Since we are calling this asynchronously anyway - sleep here
-//        // for a few seconds, just in case, to make sure the database update of
-//        // the dataset initiated by the PublishDatasetCommand has finished,
-//        // to avoid any concurrency/optimistic lock issues.
-//        try {
-//            Thread.sleep(1000);
-//        } catch (Exception ex) {
-//            logger.warning("Failed to sleep for a second.");
-//        }
-        ctxt = refresh(ctxt, retrieveRequestedSettings( wf.getRequiredSettings()), getCurrentApiToken(ctxt.getRequest().getAuthenticatedUser()), true);
+    public void start(Workflow wf, WorkflowContext ctxt, boolean findDataset) throws CommandException {
+        /*
+         * Workflows appear to start running prior to the caller's transaction
+         * completing which can result in exceptions in setting the lock below. To avoid
+         * this, there are two work-arounds - wait briefly for that transaction to end,
+         * or refresh the dataset from the db - so the lock is written based on the
+         * current db state. The latter works for pre-publication workflows (since the
+         * only changes to the Dataset in the Publish command are edits to the version
+         * number in the draft version (which aren't valid for the draft anyway)), while
+         * the former is required for post-publication workflows which may need to see
+         * the final version number, update times and other changes made in the Finalize
+         * Publication command. Not waiting saves significant time when many datasets
+         * are processed, so is prefereable when it makes sense.
+         * 
+         * This code should be reconsidered if/when the launching of pre/post
+         * publication workflows is moved to command onSuccess methods (and when
+         * onSuccess methods are guaranteed to be after the transaction completes (see
+         * #7568) or other changes are made that can guarantee the dataset in the
+         * WorkflowContext is up-to-date/usable in further transactions in the workflow.
+         * (e.g. if this method is not asynchronous)
+         * 
+         */
+
+        if (!findDataset) {
+            /*
+             * Sleep here briefly to make sure the database update from the callers
+             * transaction completes which avoids any concurrency/optimistic lock issues.
+             * Note: 1 second appears long enough, but shorter delays may work
+             */
+            try {
+                Thread.sleep(1000);
+            } catch (Exception ex) {
+                logger.warning("Failed to sleep for a second.");
+            }
+        }
+        //Refresh will only em.find the dataset if findDataset is true. (otherwise the dataset is em.merged)
+        ctxt = refresh(ctxt, retrieveRequestedSettings( wf.getRequiredSettings()), getCurrentApiToken(ctxt.getRequest().getAuthenticatedUser()), findDataset);
         lockDataset(ctxt, new DatasetLock(DatasetLock.Reason.Workflow, ctxt.getRequest().getAuthenticatedUser()));
         forward(wf, ctxt);
     }
