@@ -1,7 +1,6 @@
 package edu.harvard.iq.dataverse.workflows;
 
 import edu.harvard.iq.dataverse.DatasetVersion;
-import edu.harvard.iq.dataverse.authorization.users.ApiToken;
 import edu.harvard.iq.dataverse.authorization.users.AuthenticatedUser;
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -70,6 +69,7 @@ public class WorkflowComment implements Serializable {
 //    @Transient
 //    private Timestamp modified;
     // TODO: How should we best associate these entries to notifications, which can go to multiple authors and curators?
+    //FWIW: Workflow success/failure messages get shown to the user running the workflow if/when on the relevant dataset version page
 //    @Transient
 //    private List<UserNotification> notifications;
     public WorkflowComment(DatasetVersion version, WorkflowComment.Type type, String message, AuthenticatedUser authenticatedUser) {

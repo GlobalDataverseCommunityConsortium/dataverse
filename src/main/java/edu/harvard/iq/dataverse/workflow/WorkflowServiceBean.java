@@ -218,7 +218,7 @@ public class WorkflowServiceBean {
         WorkflowStep pendingStep = createStep(stepsLeft.get(0));
         WorkflowContext newCtxt = pending.reCreateContext(roleAssignees);
         final WorkflowContext ctxt = refresh(newCtxt,retrieveRequestedSettings( wf.getRequiredSettings()), getCurrentApiToken(newCtxt.getRequest().getAuthenticatedUser()));
-        logger.info("After resume");
+        logger.fine("After resume");
         logLocks(ctxt, ctxt.getDataset());
         logger.fine("IT: " + ctxt.getDataset().getIndexTime());
         logger.fine("MT: " + ctxt.getDataset().getModificationTime());
@@ -286,7 +286,7 @@ public class WorkflowServiceBean {
             WorkflowStepData wsd = steps.get(stepIdx);
             WorkflowStep step = createStep(wsd);
             WorkflowStepResult res = runStep(step, ctxt);
-            logger.info("AfterStep");
+            logger.fine("AfterStep");
             logLocks(ctxt, ctxt.getDataset());
             
             try {
@@ -348,9 +348,9 @@ public class WorkflowServiceBean {
          */
         datasetLock.setDataset(ctxt.getDataset());
         em.persist(datasetLock);
-        // flush sets the lock id
+        //flush creates the id
         em.flush();
-        logger.info("Created wf lock: " + datasetLock.getId());
+        logger.fine("Created lock: " + datasetLock.getId());
         ctxt.setLockId(datasetLock.getId());
     }
 
@@ -367,9 +367,9 @@ public class WorkflowServiceBean {
         lockCounter.setParameter("datasetId", ctxt.getDataset().getId());
         List<DatasetLock> locks = lockCounter.getResultList();
         for (DatasetLock lock : locks) {
-            logger.info("Found in unlock: " + lock.getId() + " " + lock.getReason().toString() + " " + lock.getInfo());
+            logger.fine("Found in unlock: " + lock.getId() + " " + lock.getReason().toString() + " " + lock.getInfo());
             if (lock.getReason() == DatasetLock.Reason.Workflow) {
-                logger.info("Removing lock: " + lock.getId());
+                logger.fine("Removing lock: " + lock.getId());
                 ctxt.getDataset().removeLock(lock);
                 em.remove(lock);
             }
@@ -377,16 +377,15 @@ public class WorkflowServiceBean {
         em.flush();
     }
 
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     void logLocks(WorkflowContext ctxt, Dataset d) {
         for (DatasetLock dl : d.getLocks()) {
-            logger.info("Found lock on dataset: " + dl.getId() + " " + dl.getReason().toString() + " " + dl.getInfo());
+            logger.fine("Found lock on dataset: " + dl.getId() + " " + dl.getReason().toString() + " " + dl.getInfo());
         }
         TypedQuery<DatasetLock> lockCounter = em.createNamedQuery("DatasetLock.getLocksByDatasetId", DatasetLock.class);
         lockCounter.setParameter("datasetId", ctxt.getDataset().getId());
         List<DatasetLock> locks = lockCounter.getResultList();
         for (DatasetLock lock : locks) {
-            logger.info("Found lock: " + lock.getId() + " " + lock.getReason().toString() + " " + lock.getInfo());
+            logger.fine("Found lock: " + lock.getId() + " " + lock.getReason().toString() + " " + lock.getInfo());
         }
     }
 
@@ -405,10 +404,8 @@ public class WorkflowServiceBean {
         
             try {
         if ( ctxt.getType() == TriggerType.PrePublishDataset ) {
-            logger.info("Complete");
-            logLocks(ctxt, ctxt.getDataset());
                 ctxt = refresh(ctxt);
-                logger.info("Complete, refreshed");
+                logger.fine("Complete");
                 logLocks(ctxt, ctxt.getDataset());
                 //Now lock for FinalizePublication - this block mirrors that in PublishDatasetCommand
                 AuthenticatedUser user = ctxt.getRequest().getAuthenticatedUser();
@@ -430,23 +427,13 @@ public class WorkflowServiceBean {
                 info += validatePhysicalFiles ? "Validating Datafiles Asynchronously" : "";
                 lock.setInfo(info);
                 lockDataset(ctxt, lock);
-//                lock = datasets.addDatasetLock(ctxt.getDataset(), lock);
-                logger.info("Returned fi lock: " + lock.getId() + " " + lock.getInfo());
                 ctxt.getDataset().addLock(lock);
-                logger.info("Added fiLock");
-                logLocks(ctxt, ctxt.getDataset());
-               
-                
-                DatasetLock wfLock =ctxt.getDataset().getLockFor(DatasetLock.Reason.Workflow); 
-                logger.info("Found wef lock: " + ((wfLock==null)? "No": wfLock.getId()));
-                DatasetLock fiLock =ctxt.getDataset().getLockFor(DatasetLock.Reason.finalizePublication); 
-                logger.info("Found final lock: " + ((fiLock==null)? "No": (fiLock.getId() + " " + fiLock.getInfo())));
                 
                 unlockDataset(ctxt);
                 ctxt.setLockId(null); //the workflow lock
                 //Refreshing merges the dataset
                 ctxt = refresh(ctxt);
-                logger.info("Refresh after unlock wf");
+                logger.fine("Refresh after unlock wf");
                 logLocks(ctxt, ctxt.getDataset());
                 //Then call Finalize
                 engine.submit(new FinalizeDatasetPublicationCommand(ctxt.getDataset(), ctxt.getRequest(), ctxt.getDatasetExternallyReleased()));
@@ -554,18 +541,18 @@ public class WorkflowServiceBean {
     	return refresh(ctxt, ctxt.getSettings(), ctxt.getApiToken());
     }
 
-    private WorkflowContext refresh( WorkflowContext ctxt, Map<String, Object> settings, ApiToken apiToken) {
+    private WorkflowContext refresh(WorkflowContext ctxt, Map<String, Object> settings, ApiToken apiToken) {
         return refresh(ctxt, settings, apiToken, false);
     }
 
     private WorkflowContext refresh( WorkflowContext ctxt, Map<String, Object> settings, ApiToken apiToken, boolean findDataset) {
-    	/* An earlier version of this class used em.find() to 'refresh' the Dataset in the context. 
-    	 * For a PostPublication workflow, this had the consequence of hiding/removing changes to the Dataset 
-    	 * made in the FinalizeDatasetPublicationCommand (i.e. the fact that the draft version is now released and
-    	 * has a version number). It is not clear to me if the em.merge below is needed or if it handles the case of 
-    	 * resumed workflows. (The overall method is needed to allow the context to be updated in the start() method with the
-    	 * settings and APItoken retrieved by the WorkflowServiceBean) - JM - 9/18.
-    	 */
+      /* An earlier version of this class used em.find() to 'refresh' the Dataset in the context. 
+       * For a PostPublication workflow, this had the consequence of hiding/removing changes to the Dataset 
+       * made in the FinalizeDatasetPublicationCommand (i.e. the fact that the draft version is now released and
+       * has a version number). It is not clear to me if the em.merge below is needed or if it handles the case of 
+       * resumed workflows. (The overall method is needed to allow the context to be updated in the start() method with the
+       * settings and APItoken retrieved by the WorkflowServiceBean) - JM - 9/18.
+       */
       /*
        * Introduced the findDataset boolean to optionally revert above change. Refreshing the Dataset just before trying to set the workflow lock
        * greatly reduces the number of OptimisticLockExceptions. JvM 2/21
@@ -577,7 +564,5 @@ public class WorkflowServiceBean {
         else {
             newCtxt = new WorkflowContext(ctxt.getRequest(), em.merge(ctxt.getDataset()), ctxt.getNextVersionNumber(), ctxt.getNextMinorVersionNumber(), ctxt.getType(), settings, apiToken, ctxt.getDatasetExternallyReleased(), ctxt.getInvocationId(), ctxt.getLockId());
         }
-        return newCtxt;
-    }
-
+        
 }

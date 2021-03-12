@@ -56,7 +56,7 @@ public class WorkflowContext {
         this.settings = settings;
         this.apiToken = apiToken;
         this.datasetExternallyReleased = datasetExternallyReleased;
-        //If null, we'll keel the randomly generated one
+        //If null, we'll keep the randomly generated one
         if(invocationId!=null) {
             setInvocationId(invocationId);
         }

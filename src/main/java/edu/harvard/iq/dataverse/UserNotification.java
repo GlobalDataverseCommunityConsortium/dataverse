@@ -156,5 +156,4 @@ public class UserNotification implements Serializable {
     public String getLocaleSendDate() {
         return DateUtil.formatDate(sendDate);
     }
-
 }
