@@ -111,16 +111,16 @@ public class WorkflowServiceBean {
     @Asynchronous
     public void start(Workflow wf, WorkflowContext ctxt) throws CommandException {
         
-        // Since we are calling this asynchronously anyway - sleep here 
-        // for a few seconds, just in case, to make sure the database update of 
-        // the dataset initiated by the PublishDatasetCommand has finished, 
-        // to avoid any concurrency/optimistic lock issues. 
-        try {
-            Thread.sleep(1000);
-        } catch (Exception ex) {
-            logger.warning("Failed to sleep for a second.");
-        }
-        ctxt = refresh(ctxt, retrieveRequestedSettings( wf.getRequiredSettings()), getCurrentApiToken(ctxt.getRequest().getAuthenticatedUser()));
+//        // Since we are calling this asynchronously anyway - sleep here
+//        // for a few seconds, just in case, to make sure the database update of
+//        // the dataset initiated by the PublishDatasetCommand has finished,
+//        // to avoid any concurrency/optimistic lock issues.
+//        try {
+//            Thread.sleep(1000);
+//        } catch (Exception ex) {
+//            logger.warning("Failed to sleep for a second.");
+//        }
+        ctxt = refresh(ctxt, retrieveRequestedSettings( wf.getRequiredSettings()), getCurrentApiToken(ctxt.getRequest().getAuthenticatedUser()), true);
         lockDataset(ctxt, new DatasetLock(DatasetLock.Reason.Workflow, ctxt.getRequest().getAuthenticatedUser()));
         forward(wf, ctxt);
     }
@@ -527,8 +527,12 @@ public class WorkflowServiceBean {
     private WorkflowContext refresh( WorkflowContext ctxt ) {
     	return refresh(ctxt, ctxt.getSettings(), ctxt.getApiToken());
     }
-    
-    private WorkflowContext refresh( WorkflowContext ctxt, Map<String, Object> settings, ApiToken apiToken ) {
+
+    private WorkflowContext refresh( WorkflowContext ctxt, Map<String, Object> settings, ApiToken apiToken) {
+        return refresh(ctxt, settings, apiToken, false);
+    }
+
+    private WorkflowContext refresh( WorkflowContext ctxt, Map<String, Object> settings, ApiToken apiToken, boolean findDataset) {
     	/* An earlier version of this class used em.find() to 'refresh' the Dataset in the context. 
     	 * For a PostPublication workflow, this had the consequence of hiding/removing changes to the Dataset 
     	 * made in the FinalizeDatasetPublicationCommand (i.e. the fact that the draft version is now released and
@@ -536,9 +540,17 @@ public class WorkflowServiceBean {
     	 * resumed workflows. (The overall method is needed to allow the context to be updated in the start() method with the
     	 * settings and APItoken retrieved by the WorkflowServiceBean) - JM - 9/18.
     	 */
-        WorkflowContext newCtxt =new WorkflowContext( ctxt.getRequest(), 
-                em.merge(ctxt.getDataset()), ctxt.getNextVersionNumber(), 
-                ctxt.getNextMinorVersionNumber(), ctxt.getType(), settings, apiToken, ctxt.getDatasetExternallyReleased(), ctxt.getInvocationId(), ctxt.getLockId());
+      /*
+       * Introduced the findDataset boolean to optionally revert above change. Refreshing the Dataset just before trying to set the workflow lock
+       * greatly reduces the number of OptimisticLockExceptions. JvM 2/21
+       */
+        WorkflowContext newCtxt;
+        if (findDataset) {
+            newCtxt = new WorkflowContext(ctxt.getRequest(), datasets.find(ctxt.getDataset().getId()), ctxt.getNextVersionNumber(), ctxt.getNextMinorVersionNumber(), ctxt.getType(), settings, apiToken, ctxt.getDatasetExternallyReleased(), ctxt.getInvocationId(), ctxt.getLockId());
+        }
+        else {
+            newCtxt = new WorkflowContext(ctxt.getRequest(), em.merge(ctxt.getDataset()), ctxt.getNextVersionNumber(), ctxt.getNextMinorVersionNumber(), ctxt.getType(), settings, apiToken, ctxt.getDatasetExternallyReleased(), ctxt.getInvocationId(), ctxt.getLockId());
+        }
         return newCtxt;
     }
 
