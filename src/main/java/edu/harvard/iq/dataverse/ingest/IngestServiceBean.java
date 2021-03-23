@@ -597,7 +597,7 @@ public class IngestServiceBean {
                 logger.fine("subsetting continuous vector");
 
                 if ("float".equals(dataFile.getDataTable().getDataVariables().get(i).getFormat())) {
-                    Float[] variableVector = TabularSubsetGenerator.subsetFloatVector(new FileInputStream(generatedTabularFile), i, dataFile.getDataTable().getCaseQuantity().intValue());
+                    Float[] variableVector = TabularSubsetGenerator.subsetFloatVector(new BufferedInputStream(new FileInputStream(generatedTabularFile), 4194304), i, dataFile.getDataTable().getCaseQuantity().intValue());
                     logger.fine("Calculating summary statistics on a Float vector;");
                     calculateContinuousSummaryStatistics(dataFile, i, variableVector);
                     // calculate the UNF while we are at it:
@@ -605,7 +605,7 @@ public class IngestServiceBean {
                     calculateUNF(dataFile, i, variableVector);
                     variableVector = null; 
                 } else {
-                    Double[] variableVector = TabularSubsetGenerator.subsetDoubleVector(new FileInputStream(generatedTabularFile), i, dataFile.getDataTable().getCaseQuantity().intValue());
+                    Double[] variableVector = TabularSubsetGenerator.subsetDoubleVector(new BufferedInputStream(new FileInputStream(generatedTabularFile), 4194304), i, dataFile.getDataTable().getCaseQuantity().intValue());
                     logger.fine("Calculating summary statistics on a Double vector;");
                     calculateContinuousSummaryStatistics(dataFile, i, variableVector);
                     // calculate the UNF while we are at it:
@@ -627,7 +627,7 @@ public class IngestServiceBean {
                     && dataFile.getDataTable().getDataVariables().get(i).isTypeNumeric()) {
                 logger.fine("subsetting discrete-numeric vector");
 
-                Long[] variableVector = TabularSubsetGenerator.subsetLongVector(new FileInputStream(generatedTabularFile), i, dataFile.getDataTable().getCaseQuantity().intValue());
+                Long[] variableVector = TabularSubsetGenerator.subsetLongVector(new BufferedInputStream(new FileInputStream(generatedTabularFile), 4194304), i, dataFile.getDataTable().getCaseQuantity().intValue());
                 // We are discussing calculating the same summary stats for 
                 // all numerics (the same kind of sumstats that we've been calculating
                 // for numeric continuous type)  -- L.A. Jul. 2014
@@ -661,7 +661,7 @@ public class IngestServiceBean {
             if (dataFile.getDataTable().getDataVariables().get(i).isTypeCharacter()) {
 
                 logger.fine("subsetting character vector");
-                String[] variableVector = TabularSubsetGenerator.subsetStringVector(new FileInputStream(generatedTabularFile), i, dataFile.getDataTable().getCaseQuantity().intValue());
+                String[] variableVector = TabularSubsetGenerator.subsetStringVector(new BufferedInputStream(new FileInputStream(generatedTabularFile), 4194304), i, dataFile.getDataTable().getCaseQuantity().intValue());
                 //calculateCharacterSummaryStatistics(dataFile, i, variableVector);
                 // calculate the UNF while we are at it:
                 logger.fine("Calculating UNF on a String vector");
@@ -689,10 +689,10 @@ public class IngestServiceBean {
             Object[] variableVector = null;
             if (cats.size() > 0) {
                 if (isNumeric) {
-                    variableVector = TabularSubsetGenerator.subsetFloatVector(new FileInputStream(generatedTabularFile), i, caseQuantity);
+                    variableVector = TabularSubsetGenerator.subsetFloatVector(new BufferedInputStream(new FileInputStream(generatedTabularFile), 4194304), i, caseQuantity);
                 }
                 else {
-                    variableVector = TabularSubsetGenerator.subsetStringVector(new FileInputStream(generatedTabularFile), i, caseQuantity);
+                    variableVector = TabularSubsetGenerator.subsetStringVector(new BufferedInputStream(new FileInputStream(generatedTabularFile), 4194304), i, caseQuantity);
                 }
                 if (variableVector != null) {
                     Hashtable<Object, Double> freq = calculateFrequency(variableVector);
