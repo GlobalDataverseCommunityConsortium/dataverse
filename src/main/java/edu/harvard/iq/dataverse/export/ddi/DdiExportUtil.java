@@ -245,7 +245,7 @@ public class DdiExportUtil {
         
         writeSubjectElement(xmlw, version, datasetDto.getMetadataLanguage()); //Subject and Keywords
         writeAbstractElement(xmlw, version, datasetDto.getMetadataLanguage()); // Description
-        writeSummaryDescriptionElement(xmlw, version);
+        writeSummaryDescriptionElement(xmlw, version, datasetDto.getMetadataLanguage());
         writeFullElement(xmlw, "notes", dto2Primitive(version, DatasetFieldConstant.notesText));
         ////////
         xmlw.writeEndElement(); // stdyInfo
@@ -363,7 +363,7 @@ public class DdiExportUtil {
         xmlw.writeEndElement(); // verStmt
     }
     
-    private static void writeSummaryDescriptionElement(XMLStreamWriter xmlw, DatasetVersionDTO datasetVersionDTO) throws XMLStreamException {
+    private static void writeSummaryDescriptionElement(XMLStreamWriter xmlw, DatasetVersionDTO datasetVersionDTO, String lang) throws XMLStreamException {
         xmlw.writeStartElement("sumDscr");
         for (Map.Entry<String, MetadataBlockDTO> entry : datasetVersionDTO.getMetadataBlocks().entrySet()) {
             String key = entry.getKey();
@@ -493,7 +493,7 @@ public class DdiExportUtil {
                         writeMultipleElement(xmlw, "universe", fieldDTO);
                     }
                     if (DatasetFieldConstant.unitOfAnalysis.equals(fieldDTO.getTypeName())) {
-                        writeMultipleElement(xmlw, "anlyUnit", fieldDTO);                     
+                        writeI18NElementList(xmlw, "anlyUnit", fieldDTO.getMultipleVocab(), "unitOfAnalysis", fieldDTO.getTypeClass(), "socialscience", lang);
                     }
                 }              
             }
@@ -521,7 +521,7 @@ public class DdiExportUtil {
     private static void writeMethodElement(XMLStreamWriter xmlw , DatasetVersionDTO version, String lang) throws XMLStreamException{
         xmlw.writeStartElement("method");
         xmlw.writeStartElement("dataColl");
-        writeFullElement(xmlw, "timeMeth", dto2Primitive(version, DatasetFieldConstant.timeMethod)); 
+        writeI18NElement(xmlw, "timeMeth", version, DatasetFieldConstant.timeMethod,lang); 
         writeFullElement(xmlw, "dataCollector", dto2Primitive(version, DatasetFieldConstant.dataCollector));         
         writeFullElement(xmlw, "collectorTraining", dto2Primitive(version, DatasetFieldConstant.collectorTraining));   
         writeFullElement(xmlw, "frequenc", dto2Primitive(version, DatasetFieldConstant.frequencyOfDataCollection));      
@@ -538,8 +538,8 @@ public class DdiExportUtil {
         writeFullElement(xmlw, "srcDocu", dto2Primitive(version, DatasetFieldConstant.accessToSources));
         xmlw.writeEndElement(); //sources
 
-        writeFullElement(xmlw, "collMode", dto2Primitive(version, DatasetFieldConstant.collectionMode)); 
-        writeFullElement(xmlw, "resInstru", dto2Primitive(version, DatasetFieldConstant.researchInstrument)); 
+        writeI18NElement(xmlw, "collMode", version, DatasetFieldConstant.collectionMode, lang); 
+        writeI18NElement(xmlw, "resInstru", version, DatasetFieldConstant.researchInstrument, lang); 
         writeFullElement(xmlw, "collSitu", dto2Primitive(version, DatasetFieldConstant.dataCollectionSituation)); 
         writeFullElement(xmlw, "actMin", dto2Primitive(version, DatasetFieldConstant.actionsToMinimizeLoss));
         writeFullElement(xmlw, "conOps", dto2Primitive(version, DatasetFieldConstant.controlOperations));
@@ -569,7 +569,7 @@ public class DdiExportUtil {
             if ("citation".equals(key)) {
                 for (FieldDTO fieldDTO : value.getFields()) {
                     if (DatasetFieldConstant.subject.equals(fieldDTO.getTypeName())){
-                        writeI18NElementList(xmlw, "keyword", fieldDTO.getMultipleVocab(), "subject", "controlledVocabulary", "citation", lang);
+                        writeI18NElementList(xmlw, "keyword", fieldDTO.getMultipleVocab(), "subject", fieldDTO.getTypeClass(), "citation", lang);
                     }
                     
                     if (DatasetFieldConstant.keyword.equals(fieldDTO.getTypeName())) {
