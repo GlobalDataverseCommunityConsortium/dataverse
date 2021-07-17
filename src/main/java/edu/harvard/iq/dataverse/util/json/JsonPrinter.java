@@ -715,7 +715,9 @@ public class JsonPrinter {
                 if (!cvocEntry.containsKey("retrieval-filtering")) {
                     valueArrStack.peek().add(dsfv.getValue());
                 } else {
-                    valueArrStack.peek().add(datasetFieldService.getExternalVocabularyValue(dsfv.getValue()));
+                    JsonObject value = datasetFieldService.getExternalVocabularyValue(dsfv.getValue());
+                    if (value != null)
+                        valueArrStack.peek().add(value);
                 }
             }
         }
