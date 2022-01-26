@@ -636,7 +636,7 @@ public class SearchServiceBean {
                    }
                     FacetLabel facetLabel = new FacetLabel(localefriendlyName, facetFieldCount.getCount());
                     // quote field facets
-                    facetLabel.setFilterQuery(facetField.getName() + ":\"" + facetFieldCount.getName() + "\"");
+                    facetLabel.setFilterQuery(facetField.getName() + ":\"" + localefriendlyName + "\"");
                     facetLabelList.add(facetLabel);
                     if (facetField.getName().equals(SearchFields.PUBLICATION_STATUS)) {
                         if (facetFieldCount.getName().equals(IndexServiceBean.getUNPUBLISHED_STRING())) {

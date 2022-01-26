@@ -892,6 +892,9 @@ public class IndexServiceBean {
                                 if (controlledVocabularyValue.getStrValue().equals(DatasetField.NA_VALUE)) {
                                     continue;
                                 }
+                                
+                                
+//ADD VALS FOR ALL LANGS! (AND MD LANGS?)                                
                                 solrInputDocument.addField(solrFieldSearchable, controlledVocabularyValue.getStrValue());
                                 if (dsfType.getSolrField().isFacetable()) {
                                     solrInputDocument.addField(solrFieldFacetable, controlledVocabularyValue.getStrValue());
