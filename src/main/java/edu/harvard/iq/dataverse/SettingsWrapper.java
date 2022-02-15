@@ -329,37 +329,20 @@ public class SettingsWrapper implements java.io.Serializable {
     
     public boolean isLocalesConfigured() {
         if (configuredLocales == null) {
-            initLocaleSettings();
+            configuredLocales = new LinkedHashMap<>();
+            settingsService.initLocaleSettings(configuredLocales);
         }
         return configuredLocales.size() > 1;
     }
 
     public Map<String, String> getConfiguredLocales() {
         if (configuredLocales == null) {
-            initLocaleSettings(); 
+            configuredLocales = new LinkedHashMap<>();
+            settingsService.initLocaleSettings(configuredLocales); 
         }
         return configuredLocales;
     }
     
-    private void initLocaleSettings() {
-        
-        configuredLocales = new LinkedHashMap<>();
-        
-        try {
-            JSONArray entries = new JSONArray(getValueForKey(SettingsServiceBean.Key.Languages, "[]"));
-            for (Object obj : entries) {
-                JSONObject entry = (JSONObject) obj;
-                String locale = entry.getString("locale");
-                String title = entry.getString("title");
-
-                configuredLocales.put(locale, title);
-            }
-        } catch (JSONException e) {
-            //e.printStackTrace();
-            // do we want to know? - probably not
-        }
-    }
-
     public boolean isDoiInstallation() {
         String protocol = getValueForKey(SettingsServiceBean.Key.Protocol);
         if ("doi".equals(protocol)) {
@@ -486,31 +469,9 @@ public class SettingsWrapper implements java.io.Serializable {
 
     Map<String,String> languageMap = null;
     
-    Map<String, String> getBaseMetadataLanguageMap(boolean refresh) {
-        if (languageMap == null || refresh) {
-            languageMap = new HashMap<String, String>();
-
-            /* If MetadataLanaguages is set, use it.
-             * If not, we can't assume anything and should avoid assuming a metadata language
-             */
-            String mlString = getValueForKey(SettingsServiceBean.Key.MetadataLanguages,"");
-            
-            if(mlString.isEmpty()) {
-                mlString="[]";
-            }
-            JsonReader jsonReader = Json.createReader(new StringReader(mlString));
-            JsonArray languages = jsonReader.readArray();
-            for(JsonValue jv: languages) {
-                JsonObject lang = (JsonObject) jv;
-                languageMap.put(lang.getString("locale"), lang.getString("title"));
-            }
-        }
-        return languageMap;
-    }
-    
     public Map<String, String> getMetadataLanguages(DvObjectContainer target) {
         Map<String,String> currentMap = new HashMap<String,String>();
-        currentMap.putAll(getBaseMetadataLanguageMap(true));
+        currentMap.putAll(settingsService.getBaseMetadataLanguageMap(languageMap, true));
         languageMap.put(DvObjectContainer.UNDEFINED_METADATA_LANGUAGE_CODE, getDefaultMetadataLanguageLabel(target));
         return languageMap;
     }
@@ -530,7 +491,7 @@ public class SettingsWrapper implements java.io.Serializable {
                 mlCode = getDefaultMetadataLanguage();
             }
             // Get the label for the language code found
-            mlLabel = getBaseMetadataLanguageMap(false).get(mlCode);
+            mlLabel = settingsService.getBaseMetadataLanguageMap(languageMap, false).get(mlCode);
         }
         if(fromAncestor) {
             mlLabel = mlLabel + " " + BundleUtil.getStringFromBundle("dataverse.inherited");
@@ -541,7 +502,7 @@ public class SettingsWrapper implements java.io.Serializable {
     }
     
     public String getDefaultMetadataLanguage() {
-        Map<String, String> mdMap = getBaseMetadataLanguageMap(false);
+        Map<String, String> mdMap = settingsService.getBaseMetadataLanguageMap(languageMap, false);
         if(mdMap.size()>=1) {
             if(mdMap.size()==1) {
                 //One entry - it's the default
