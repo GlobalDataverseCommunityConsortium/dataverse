@@ -14,14 +14,14 @@ import com.jayway.restassured.path.json.JsonPath;
 
 import java.util.List;
 import java.util.Map;
-import javax.json.JsonObject;
-import static javax.ws.rs.core.Response.Status.CREATED;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
-import static javax.ws.rs.core.Response.Status.OK;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
+import jakarta.json.JsonObject;
+import static jakarta.ws.rs.core.Response.Status.CREATED;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import static jakarta.ws.rs.core.Response.Status.OK;
+import static jakarta.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
+import static jakarta.ws.rs.core.Response.Status.METHOD_NOT_ALLOWED;
 import edu.harvard.iq.dataverse.DataFile;
 import edu.harvard.iq.dataverse.DataverseServiceBean;
 
@@ -49,11 +49,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObjectBuilder;
-import static javax.ws.rs.core.Response.Status.NO_CONTENT;
-import static javax.ws.rs.core.Response.Status.OK;
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObjectBuilder;
+import static jakarta.ws.rs.core.Response.Status.NO_CONTENT;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.junit.Assert.assertEquals;
 import org.hamcrest.CoreMatchers;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -917,7 +917,7 @@ public class DatasetsIT {
         /**
          * If you're getting a crazy error like this...
          *
-         * javax.net.ssl.SSLHandshakeException:
+         * jakarta.net.ssl.SSLHandshakeException:
          * sun.security.validator.ValidatorException: PKIX path building failed:
          * sun.security.provider.certpath.SunCertPathBuilderException: unable to
          * find valid certification path to requested target
@@ -974,7 +974,7 @@ public class DatasetsIT {
         // to the right place, that we've been given the session cookie, etc.
                 
         assertEquals(FOUND.getStatusCode(), getDatasetAsUserWhoClicksPrivateUrl.getStatusCode());
-        // Yes, javax.ws.rs.core.Response.Status.FOUND is 302!
+        // Yes, jakarta.ws.rs.core.Response.Status.FOUND is 302!
         String title = getDatasetAsUserWhoClicksPrivateUrl.getBody().htmlPath().getString("html.head.title");
         assertEquals("Document moved", title);
         

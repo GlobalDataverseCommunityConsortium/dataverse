@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.HashMap;
-import static javax.ws.rs.core.Response.Status.OK;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import org.hamcrest.collection.IsMapContaining;
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

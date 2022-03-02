@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import javax.ejb.Stateless;
+import jakarta.ejb.Stateless;
 
 @Stateless
 public class FakePidProviderServiceBean extends AbstractGlobalIdServiceBean {

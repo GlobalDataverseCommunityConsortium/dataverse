@@ -23,19 +23,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.ejb.EJB;
-import javax.ejb.Stateless;
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.persistence.EntityManager;
-import javax.persistence.NoResultException;
-import javax.persistence.NonUniqueResultException;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ejb.EJB;
+import jakarta.ejb.Stateless;
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.NonUniqueResultException;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
+import jakarta.ws.rs.core.UriInfo;
 
 @Stateless
 public class MetricsServiceBean implements Serializable {
@@ -383,7 +383,7 @@ public class MetricsServiceBean implements Serializable {
                 jab.add(stats);
             }
 
-        } catch (javax.persistence.NoResultException nr) {
+        } catch (jakarta.persistence.NoResultException nr) {
             // do nothing
         }
         return jab.build();
@@ -517,7 +517,7 @@ public class MetricsServiceBean implements Serializable {
                 job.add(MetricsUtil.COUNT, (long) result[2]);
                 jab.add(job);
             }
-        } catch (javax.persistence.NoResultException nr) {
+        } catch (jakarta.persistence.NoResultException nr) {
             // do nothing
         }
         return jab.build();
@@ -556,7 +556,7 @@ public class MetricsServiceBean implements Serializable {
                 jab.add(job);
             }
 
-        } catch (javax.persistence.NoResultException nr) {
+        } catch (jakarta.persistence.NoResultException nr) {
             // do nothing
         }
         return jab.build();
@@ -716,7 +716,7 @@ public class MetricsServiceBean implements Serializable {
         Metric metric = null;
         try {
             metric = (Metric) query.getSingleResult();
-        } catch (javax.persistence.NoResultException nr) {
+        } catch (jakarta.persistence.NoResultException nr) {
             // do nothing
             logger.fine("No result");
         } catch (NonUniqueResultException nur) {

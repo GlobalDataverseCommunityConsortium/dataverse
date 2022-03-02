@@ -3,12 +3,13 @@ package edu.harvard.iq.dataverse;
 
 import static org.junit.Assert.assertEquals;
 
-import javax.validation.ConstraintValidatorContext;
+import javax.validation.ClockProvider;
+import jakarta.validation.ConstraintValidatorContext;
 
 import org.hibernate.validator.internal.engine.constraintvalidation.ConstraintValidatorContextImpl;
 import org.hibernate.validator.internal.engine.path.PathImpl;
-import javax.validation.Validation;
-import javax.validation.ValidatorFactory;
+import jakarta.validation.Validation;
+import jakarta.validation.ValidatorFactory;
 import org.junit.Test;
 
 /**
@@ -39,7 +40,7 @@ public class URLValidatorTest {
     @Test
     public void testIsValidWithContextAndValidURL() {
         String value = "https://twitter.com/";
-        ConstraintValidatorContext context = new ConstraintValidatorContextImpl(validatorFactory.getClockProvider(), PathImpl.createPathFromString(""),null, null);
+        ConstraintValidatorContext context = (ConstraintValidatorContext) new ConstraintValidatorContextImpl((ClockProvider) validatorFactory.getClockProvider(), PathImpl.createPathFromString(""),null, null);
 
         assertEquals(true, new URLValidator().isValid(value, context));
     }
@@ -47,7 +48,7 @@ public class URLValidatorTest {
     @Test
     public void testIsValidWithContextButInvalidURL() {
         String value = "cnn.com";
-        ConstraintValidatorContext context = new ConstraintValidatorContextImpl(validatorFactory.getClockProvider(), PathImpl.createPathFromString(""),null, null);
+        ConstraintValidatorContext context = (ConstraintValidatorContext) new ConstraintValidatorContextImpl((ClockProvider) validatorFactory.getClockProvider(), PathImpl.createPathFromString(""),null, null);
 
         assertEquals(false, new URLValidator().isValid(value, context));
     }

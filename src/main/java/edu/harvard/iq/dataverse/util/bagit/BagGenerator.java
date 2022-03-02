@@ -107,7 +107,7 @@ public class BagGenerator {
 
     private String apiKey = null;
 
-    private javax.json.JsonObject oremapObject;
+    private jakarta.json.JsonObject oremapObject;
     private JsonObject aggregation;
 
     private String dataciteXml;
@@ -200,7 +200,7 @@ public class BagGenerator {
 
         File tmp = File.createTempFile("qdr-scatter-dirs", "tmp");
         dirs = ScatterZipOutputStream.fileBased(tmp);
-        // The oremapObject is javax.json.JsonObject and we need com.google.gson.JsonObject for the aggregation object
+        // The oremapObject is jakarta.json.JsonObject and we need com.google.gson.JsonObject for the aggregation object
         aggregation = (JsonObject) new JsonParser().parse(oremapObject.getJsonObject(JsonLDTerm.ore("describes").getLabel()).toString());
 
         bagID = aggregation.get("@id").getAsString() + "v."

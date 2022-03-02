@@ -26,7 +26,7 @@ import edu.harvard.iq.dataverse.util.StringUtil;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.logging.Logger;
-import javax.persistence.Query;
+import jakarta.persistence.Query;
 
 /**
  *

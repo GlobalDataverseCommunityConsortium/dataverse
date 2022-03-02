@@ -97,9 +97,9 @@ import java.util.ServiceLoader;
  * implementation classes present in the JAR file.  For example, if
  * the JAR file contained a class named
  * <code>com.mycompany.mypkg.MyServiceImpl</code> which implements the
- * <code>javax.someapi.SomeService</code> interface, the JAR file
+ * <code>jakarta.someapi.SomeService</code> interface, the JAR file
  * would contain a file named: <pre>
- * META-INF/services/javax.someapi.SomeService </pre>
+ * META-INF/services/jakarta.someapi.SomeService </pre>
  *
  * containing the line:
  *

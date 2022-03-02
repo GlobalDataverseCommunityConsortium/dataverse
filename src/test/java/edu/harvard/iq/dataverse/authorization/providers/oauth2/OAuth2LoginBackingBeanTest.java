@@ -19,10 +19,10 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.omnifaces.util.Faces;
 
-import javax.faces.context.ExternalContext;
-import javax.faces.context.FacesContext;
-import javax.faces.context.Flash;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.faces.context.ExternalContext;
+import jakarta.faces.context.FacesContext;
+import jakarta.faces.context.Flash;
+import jakarta.servlet.http.HttpServletRequest;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -56,10 +56,10 @@ class OAuth2LoginBackingBeanTest {
      * Without doing this, many tests will fail with NPEs while fetching the bundle,
      * when the locale is received from the context.
      */
-    static FacesContext save = Faces.getContext();
+    static FacesContext save = FacesContext.getCurrentInstance();
     @AfterAll
     static void cleanupFaces() {
-        Faces.setContext(save);
+        //FacesContext.getCurrentInstance().s.setContext(save);
     }
     
     @BeforeEach
@@ -113,7 +113,7 @@ class OAuth2LoginBackingBeanTest {
             loginBackingBean.oauth2Tokens = this.oauth2Tokens;
             
             // mock FacesContext to make the method testable
-            Faces.setContext(facesContextMock);
+            //Faces.setContext(facesContextMock);
             when(facesContextMock.getExternalContext()).thenReturn(externalContextMock);
             when(externalContextMock.getRequest()).thenReturn(requestMock);
             lenient().when(externalContextMock.getFlash()).thenReturn(flashMock);

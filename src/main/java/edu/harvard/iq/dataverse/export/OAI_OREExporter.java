@@ -11,8 +11,8 @@ import java.io.OutputStream;
 import java.util.ResourceBundle;
 import java.util.logging.Logger;
 
-import javax.json.JsonObject;
-import javax.ws.rs.core.MediaType;
+import jakarta.json.JsonObject;
+import jakarta.ws.rs.core.MediaType;
 
 @AutoService(Exporter.class)
 public class OAI_OREExporter implements Exporter {

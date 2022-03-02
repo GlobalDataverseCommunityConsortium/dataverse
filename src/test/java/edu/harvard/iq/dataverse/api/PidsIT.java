@@ -3,9 +3,9 @@ package edu.harvard.iq.dataverse.api;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.path.json.JsonPath;
 import com.jayway.restassured.response.Response;
-import static javax.ws.rs.core.Response.Status.CREATED;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
-import static javax.ws.rs.core.Response.Status.OK;
+import static jakarta.ws.rs.core.Response.Status.CREATED;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -80,15 +80,15 @@ public class PidsIT {
         reservePid.prettyPrint();
         // These are some errors seen along the way:
         /**
-         * "message": "javax.ejb.EJBTransactionRolledbackException: Exception
-         * thrown from bean: javax.ejb.EJBTransactionRolledbackException:
+         * "message": "jakarta.ejb.EJBTransactionRolledbackException: Exception
+         * thrown from bean: jakarta.ejb.EJBTransactionRolledbackException:
          * Exception thrown from bean: java.lang.RuntimeException: Response
          * code: 400, can't write unknown attribute `repository_id`"
          */
         /**
          * "message": "result: Problem calling createIdentifier:
-         * javax.ejb.EJBTransactionRolledbackException: Exception thrown from
-         * bean: javax.ejb.EJBTransactionRolledbackException: Exception thrown
+         * jakarta.ejb.EJBTransactionRolledbackException: Exception thrown from
+         * bean: jakarta.ejb.EJBTransactionRolledbackException: Exception thrown
          * from bean: java.lang.RuntimeException: Response code: 403, Access is
          * denied"
          */

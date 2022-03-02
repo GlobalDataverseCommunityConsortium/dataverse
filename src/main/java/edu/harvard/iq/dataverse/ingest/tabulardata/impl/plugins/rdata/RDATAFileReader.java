@@ -28,7 +28,7 @@ import java.util.logging.*;
 import java.util.*;
 import java.security.NoSuchAlgorithmException;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 // Rosuda Wrappers and Methods for R-calls to Rserve
 import org.rosuda.REngine.REXP;

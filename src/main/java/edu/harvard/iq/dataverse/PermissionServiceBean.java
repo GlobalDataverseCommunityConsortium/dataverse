@@ -17,14 +17,14 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import javax.ejb.EJB;
-import javax.ejb.Stateless;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.ejb.EJB;
+import jakarta.ejb.Stateless;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import java.util.HashSet;
 import java.util.List;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import static edu.harvard.iq.dataverse.engine.command.CommandHelper.CH;
 import edu.harvard.iq.dataverse.engine.command.DataverseRequest;
 import edu.harvard.iq.dataverse.engine.command.exception.IllegalCommandException;
@@ -41,7 +41,7 @@ import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
-import javax.persistence.Query;
+import jakarta.persistence.Query;
 
 /**
  * Your one-stop-shop for deciding which user can do what action on which

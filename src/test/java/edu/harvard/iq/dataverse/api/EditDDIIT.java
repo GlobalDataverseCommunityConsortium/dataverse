@@ -28,7 +28,7 @@ import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamException;
 
 
-import static javax.ws.rs.core.Response.Status.OK;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static junit.framework.Assert.assertEquals;
 
 import static org.junit.Assert.assertNotEquals;

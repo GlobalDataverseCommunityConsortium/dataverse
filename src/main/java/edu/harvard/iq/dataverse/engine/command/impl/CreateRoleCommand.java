@@ -13,7 +13,7 @@ import edu.harvard.iq.dataverse.engine.command.RequiredPermissions;
 import edu.harvard.iq.dataverse.engine.command.exception.CommandException;
 import edu.harvard.iq.dataverse.engine.command.exception.IllegalCommandException;
 import edu.harvard.iq.dataverse.util.BundleUtil;
-import javax.persistence.NoResultException;
+import jakarta.persistence.NoResultException;
 
 /**
  * Create a new role in a dataverse.

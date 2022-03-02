@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 
 /**
