@@ -102,6 +102,7 @@ public class FileAccessIO<T extends DvObject> extends StorageIO<T> {
             }
 
             if (isReadAccess) {
+                //ToDo - is this needed or can/should we have a getInputStream method as in S3AccessIO? (having open implicitly create a stream can lead that stream being left open)
                 FileInputStream fin = openLocalFileAsInputStream();
 
                 if (fin == null) {

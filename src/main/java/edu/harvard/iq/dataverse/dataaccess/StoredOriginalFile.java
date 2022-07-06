@@ -61,6 +61,7 @@ public class StoredOriginalFile {
         InputStreamIO inputStreamIO;
         Channel storedOriginalChannel = null;
         try {
+            //ToDo - needed? If so, when does stream it get closed, i.e. for filesAccessIO?
             storageIO.open();
             storedOriginalChannel = storageIO.openAuxChannel(SAVED_ORIGINAL_FILENAME_EXTENSION);
             storedOriginalSize = dataFile.getDataTable().getOriginalFileSize() != null ? 
