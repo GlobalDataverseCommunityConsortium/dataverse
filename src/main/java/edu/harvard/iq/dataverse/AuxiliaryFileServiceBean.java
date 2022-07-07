@@ -14,6 +14,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.inject.Named;
@@ -46,6 +48,7 @@ public class AuxiliaryFileServiceBean implements java.io.Serializable {
     @EJB
     private SystemConfig systemConfig;
     
+    private static final Pattern tagOrVersionPattern =  Pattern.compile("^[A-za-z0-9.]{1,255}$");
 
     public AuxiliaryFile find(Object pk) {
         return em.find(AuxiliaryFile.class, pk);
@@ -76,6 +79,18 @@ public class AuxiliaryFileServiceBean implements java.io.Serializable {
 
         StorageIO<DataFile> storageIO = null;
         AuxiliaryFile auxFile = new AuxiliaryFile();
+
+        /*
+         * Note - these allowed char checks and the use of '_' between non-null tag and
+         * version are the only things that prevents someone (for better or worse) from
+         * using the aux api to do CRUD on internal files - original/ingested, thumbs,
+         * cached md exports, etc.
+         * 
+         */
+
+       if(!isValidTagOrVersion(formatTag) || ! isValidTagOrVersion(formatVersion)) {
+           throw new ClientErrorException("InvalidCharacters in tag or version - only alphanumeric and '.' allowed.", Response.Status.BAD_REQUEST);
+       }
         String auxExtension = formatTag + "_" + formatVersion;
         try {
             // Save to storage first.
@@ -242,6 +257,13 @@ public class AuxiliaryFileServiceBean implements java.io.Serializable {
         AuxiliaryFile auxFile = new AuxiliaryFile();
         auxFile.setType(type);
         return auxFile.getTypeFriendly();
+    }
+    
+    private boolean isValidTagOrVersion(String name) {
+        if (name == null) {
+            return false;
+        }
+        return tagOrVersionPattern.matcher(name).matches();
     }
 
 }
