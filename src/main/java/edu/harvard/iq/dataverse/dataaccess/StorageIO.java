@@ -171,7 +171,7 @@ public abstract class StorageIO<T extends DvObject> {
     
     /**
      * This method copies a local InputStream into this DataAccess Auxiliary location.
-     * Note that the S3 driver implementation of this abstract method is problematic, 
+     * Note that the S3 driver implementation of this abstract method is inefficient, 
      * because S3 cannot save an object of an unknown length. This effectively 
      * nullifies any benefits of streaming; as we cannot start saving until we 
      * have read the entire stream. 
@@ -190,8 +190,12 @@ public abstract class StorageIO<T extends DvObject> {
      * @param auxItemTag String representing this Auxiliary type ("extension")
      * @throws IOException if anything goes wrong.
     */
-    public abstract void saveInputStreamAsAux(InputStream inputStream, String auxItemTag) throws IOException; 
-    public abstract void saveInputStreamAsAux(InputStream inputStream, String auxItemTag, Long filesize) throws IOException;
+    public abstract void saveInputStreamAsAux(InputStream inputStream, String auxItemTag) throws IOException;
+    
+    /*StorageIO subtypes like S3AccessIO that can make use of the filesize to be more efficient should override this method*/
+    public void saveInputStreamAsAux(InputStream inputStream, String auxItemTag, Long filesize) throws IOException {
+        saveInputStreamAsAux(inputStream, auxItemTag);
+    };
     
     public abstract List<String>listAuxObjects() throws IOException;
     

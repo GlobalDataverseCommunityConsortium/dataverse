@@ -392,11 +392,6 @@ public class SwiftAccessIO<T extends DvObject> extends StorageIO<T> {
 
     }
     
-    @Override
-    public void saveInputStreamAsAux(InputStream inputStream, String auxItemTag, Long filesize) throws IOException {
-        saveInputStreamAsAux(inputStream, auxItemTag);
-    }
-    
     // this method copies a local InputStream into this DataAccess Auxiliary location:
     @Override
     public void saveInputStreamAsAux(InputStream inputStream, String auxItemTag) throws IOException {

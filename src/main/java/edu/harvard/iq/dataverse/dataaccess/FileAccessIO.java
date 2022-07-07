@@ -378,11 +378,6 @@ public class FileAccessIO<T extends DvObject> extends StorageIO<T> {
     }
     
     @Override
-    public void saveInputStreamAsAux(InputStream inputStream, String auxItemTag, Long filesize) throws IOException {
-        saveInputStreamAsAux(inputStream, auxItemTag);
-    }
-    
-    @Override
     public void saveInputStreamAsAux(InputStream inputStream, String auxItemTag) throws IOException {
         if (dvObject instanceof Dataset && !this.canWrite()) {
             // see the comment in openAuxChannel()

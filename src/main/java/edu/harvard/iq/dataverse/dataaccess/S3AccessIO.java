@@ -584,17 +584,11 @@ public class S3AccessIO<T extends DvObject> extends StorageIO<T> {
         String pathNum = Integer.toString(rand.nextInt(Integer.MAX_VALUE));
         Path tempPath = Paths.get(directoryString, pathNum);
         File tempFile = createTempFile(tempPath, inputStream);
-        
-        String destinationKey = getDestinationKey(auxItemTag);
-        
         try {
-            s3.putObject(bucketName, destinationKey, tempFile);
-        } catch (SdkClientException ioex) {
+          savePathAsAux(tempPath, auxItemTag);
+        } catch (IOException ioex) {
             String failureMsg = ioex.getMessage();
-
-            if (failureMsg == null) {
-                failureMsg = "S3AccessIO: SdkClientException occured while saving a local InputStream as S3Object";
-            }
+            failureMsg = "Exception occured while saving a local InputStream as S3Object: " + failureMsg;
             tempFile.delete();
             throw new IOException(failureMsg);
         }
@@ -605,7 +599,7 @@ public class S3AccessIO<T extends DvObject> extends StorageIO<T> {
     //We save those streams to a file and then upload the file
     private File createTempFile(Path path, InputStream inputStream) throws IOException {
 
-        File targetFile = new File(path.toUri()); // File needs a name
+        File targetFile = path.toFile();
         try (OutputStream outStream = new FileOutputStream(targetFile);) {
 
             byte[] buffer = new byte[8 * 1024];
