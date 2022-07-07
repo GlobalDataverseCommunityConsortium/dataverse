@@ -137,9 +137,12 @@ public abstract class StorageIO<T extends DvObject> {
      * @param auxItemTag String representing this Auxiliary type ("extension")
      * @throws IOException if anything goes wrong.
     */
+    /*
+    @Deprecated
     public abstract void saveInputStream(InputStream inputStream) throws IOException;
+    @Deprecated
     public abstract void saveInputStream(InputStream inputStream, Long filesize) throws IOException;
-    
+    */
     // Auxiliary File Management: (new as of 4.0.2!)
     
     // An "auxiliary object" is an abstraction of the traditional DVN/Dataverse

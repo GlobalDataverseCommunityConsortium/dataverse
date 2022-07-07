@@ -6,6 +6,7 @@ import edu.harvard.iq.dataverse.DvObject;
 import edu.harvard.iq.dataverse.datavariable.DataVariable;
 import edu.harvard.iq.dataverse.util.StringUtil;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -115,15 +116,7 @@ public class SwiftAccessIO<T extends DvObject> extends StorageIO<T> {
             }
 
             if (isReadAccess) {
-                InputStream fin = openSwiftFileAsInputStream();
-
-                if (fin == null) {
-                    throw new IOException("Failed to open Swift file " + getStorageLocation());
-                }
-
-                this.setInputStream(fin);
-                setChannel(Channels.newChannel(fin));
-
+ 
                 if (dataFile.getContentType() != null
                         && dataFile.getContentType().equals("text/tab-separated-values")
                         && dataFile.isTabularData()
@@ -168,6 +161,26 @@ public class SwiftAccessIO<T extends DvObject> extends StorageIO<T> {
         }
     }
 
+    @Override
+    public InputStream getInputStream() throws IOException {
+        if (super.getInputStream() == null) {
+            InputStream fin = openSwiftFileAsInputStream();
+            this.setInputStream(fin);
+        }
+        if (super.getInputStream() == null) {
+            throw new IOException("Failed to open Swift file " + getStorageLocation());
+        }
+        setChannel(Channels.newChannel(super.getInputStream()));
+        return super.getInputStream();
+    }
+
+    @Override
+    public Channel getChannel() throws IOException {
+        if (super.getChannel() == null) {
+            getInputStream();
+        }
+        return channel;
+    }
 
     // StorageIO method for copying a local Path (for ex., a temp file), into this DataAccess location:
     @Override
@@ -200,13 +213,15 @@ public class SwiftAccessIO<T extends DvObject> extends StorageIO<T> {
 
     }
     
-    
+ /*   
     @Override
+    @Deprecated
     public void saveInputStream(InputStream inputStream, Long filesize) throws IOException {
         saveInputStream(inputStream);
     }
     
     @Override
+    @Deprecated
     public void saveInputStream(InputStream inputStream) throws IOException {
         long newFileSize = -1;
 

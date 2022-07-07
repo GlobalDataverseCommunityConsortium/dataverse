@@ -34,6 +34,9 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.logging.Logger;
 
+import com.amazonaws.SdkClientException;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+
 // Dataverse imports:
 import edu.harvard.iq.dataverse.DataFile;
 import edu.harvard.iq.dataverse.Dataset;
@@ -42,6 +45,7 @@ import edu.harvard.iq.dataverse.DvObject;
 import edu.harvard.iq.dataverse.datavariable.DataVariable;
 import java.io.FileNotFoundException;
 import java.nio.channels.Channel;
+import java.nio.channels.Channels;
 import java.nio.file.DirectoryStream;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -102,15 +106,7 @@ public class FileAccessIO<T extends DvObject> extends StorageIO<T> {
             }
 
             if (isReadAccess) {
-                //ToDo - is this needed or can/should we have a getInputStream method as in S3AccessIO? (having open implicitly create a stream can lead that stream being left open)
-                FileInputStream fin = openLocalFileAsInputStream();
 
-                if (fin == null) {
-                    throw new IOException ("Failed to open local file "+getStorageLocation());
-                }
-
-                this.setInputStream(fin);
-                setChannel(fin.getChannel());
                 this.setSize(getLocalFileSize());
 
                 if (dataFile.getContentType() != null
@@ -188,6 +184,27 @@ public class FileAccessIO<T extends DvObject> extends StorageIO<T> {
     }
     
     @Override
+    public InputStream getInputStream() throws IOException {
+        if (super.getInputStream() == null) {
+            FileInputStream fin = openLocalFileAsInputStream();
+            this.setInputStream(fin);
+        }
+        if (super.getInputStream() == null) {
+            throw new IOException("Failed to open local file " + getStorageLocation());
+        }
+        setChannel(Channels.newChannel(super.getInputStream()));
+        return super.getInputStream();
+    }
+
+    @Override
+    public Channel getChannel() throws IOException {
+        if (super.getChannel() == null) {
+            getInputStream();
+        }
+        return channel;
+    }
+    
+    @Override
     public void savePath(Path fileSystemPath) throws IOException {
         
         // Since this is a local fileystem file, we can use the
@@ -205,13 +222,15 @@ public class FileAccessIO<T extends DvObject> extends StorageIO<T> {
         // of the object. 
         setSize(newFileSize);
     }
-    
+/*    
     @Override
+    @Deprecated
     public void saveInputStream(InputStream inputStream, Long filesize) throws IOException {
         saveInputStream(inputStream);
     }
     
     @Override
+    @Deprecated
     public void saveInputStream(InputStream inputStream) throws IOException {
         // Since this is a local fileystem file, we can use the
         // quick NIO Files.copy method: 
@@ -235,7 +254,7 @@ public class FileAccessIO<T extends DvObject> extends StorageIO<T> {
         // of the object. 
         setSize(outputFile.length());
     }
-    
+    */
     @Override
     public Channel openAuxChannel(String auxItemTag, DataAccessOption... options) throws IOException {
       

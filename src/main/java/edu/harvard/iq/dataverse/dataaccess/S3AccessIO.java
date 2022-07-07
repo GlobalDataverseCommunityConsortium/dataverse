@@ -282,26 +282,23 @@ public class S3AccessIO<T extends DvObject> extends StorageIO<T> {
 
     @Override
     public InputStream getInputStream() throws IOException {
-        if(super.getInputStream()==null) {
+        if (super.getInputStream() == null) {
             try {
                 setInputStream(s3.getObject(new GetObjectRequest(bucketName, key)).getObjectContent());
             } catch (SdkClientException sce) {
-                throw new IOException("Cannot get S3 object " + key + " ("+sce.getMessage()+")");
+                throw new IOException("Cannot get S3 object " + key + " (" + sce.getMessage() + ")");
             }
         }
-
         if (super.getInputStream() == null) {
             throw new IOException("Cannot get InputStream for S3 Object" + key);
         }
-
         setChannel(Channels.newChannel(super.getInputStream()));
-
         return super.getInputStream();
     }
-    
+
     @Override
     public Channel getChannel() throws IOException {
-        if(super.getChannel()==null) {
+        if (super.getChannel() == null) {
             getInputStream();
         }
         return channel;
@@ -366,7 +363,9 @@ public class S3AccessIO<T extends DvObject> extends StorageIO<T> {
      * @param filesize Long representing the filesize
      * @throws IOException if anything goes wrong.
     */
+    /*
     @Override
+    @Deprecated
     public void saveInputStream(InputStream inputStream, Long filesize) throws IOException {
         if (filesize == null || filesize < 0) {
             saveInputStream(inputStream);
@@ -392,6 +391,7 @@ public class S3AccessIO<T extends DvObject> extends StorageIO<T> {
     }
     
     @Override
+    @Deprecated
     public void saveInputStream(InputStream inputStream) throws IOException {
         if (!this.canWrite()) {
             open(DataAccessOption.WRITE_ACCESS);
@@ -419,6 +419,7 @@ public class S3AccessIO<T extends DvObject> extends StorageIO<T> {
         }
     }
     
+    */
     @Override
     public void delete() throws IOException {
         if (!isDirectAccess()) {

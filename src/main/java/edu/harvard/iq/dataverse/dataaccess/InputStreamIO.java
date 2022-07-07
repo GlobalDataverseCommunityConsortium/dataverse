@@ -52,7 +52,7 @@ public class InputStreamIO extends StorageIO<DataFile> {
     public void savePath(Path fileSystemPath) throws IOException {
         throw new UnsupportedDataAccessOperationException("InputStreamIO: this method is not supported in this DataAccess driver.");
     }
-    
+  /*  
     @Override
     public void saveInputStream(InputStream inputStream, Long filesize) throws IOException {
         throw new UnsupportedOperationException("InputStreamIO: this method is not supported in this DataAccess driver."); 
@@ -62,7 +62,7 @@ public class InputStreamIO extends StorageIO<DataFile> {
     public void saveInputStream(InputStream inputStream) throws IOException {
         throw new UnsupportedDataAccessOperationException("InputStreamIO: this method is not supported in this DataAccess driver.");
     }
-    
+    */
     @Override
     public void delete() throws IOException {
         throw new UnsupportedDataAccessOperationException("InputStreamIO: this method is not supported in this DataAccess driver.");

@@ -108,8 +108,8 @@ public class FileAccessIOTest {
     @Test
     public void testSavePath() throws IOException {
         datasetAccess.savePath(fileSystemPath);
-        InputStream inputStream = new ByteArrayInputStream("Hello".getBytes());
-        datasetAccess.saveInputStream(inputStream);
+//        InputStream inputStream = new ByteArrayInputStream("Hello".getBytes());
+//        datasetAccess.saveInputStream(inputStream);
     }
 
     /**

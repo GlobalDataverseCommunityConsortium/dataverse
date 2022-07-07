@@ -524,7 +524,7 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
                 "RemoteOverlayAccessIO: savePath() not implemented in this storage driver.");
 
     }
-
+/*
     @Override
     public void saveInputStream(InputStream inputStream) throws IOException {
         throw new UnsupportedDataAccessOperationException(
@@ -538,5 +538,5 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
                 "RemoteOverlayAccessIO: saveInputStream(InputStream, Long) not implemented in this storage driver.");
 
     }
-
+*/
 }
