@@ -537,7 +537,11 @@ public class DownloadInstanceWriter implements MessageBodyWriter<DownloadInstanc
                             // This is a rangeHeader request, and we still have bytes to read 
                             // (for a tabular file, we may have already written enough
                             // bytes from the variable header!)
-                            storageIO.setOffset(offset);
+                            long skip=0;
+                            //ToDo: Java 15 has a skipNBytes method to avoid having to loop
+                            while(skip<offset) {
+                              skip += instream.skip(offset-skip);
+                            }
                             // Thinking about it, we could just do instream.skip(offset) 
                             // here... But I would like to have this offset functionality 
                             // in StorageIO, for any future cases where we may not 
