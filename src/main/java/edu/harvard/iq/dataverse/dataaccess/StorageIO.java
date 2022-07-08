@@ -32,8 +32,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.nio.channels.Channel;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -247,19 +245,13 @@ public abstract class StorageIO<T extends DvObject> {
     private DataAccessRequest req;
     private InputStream in = null;
     private OutputStream out; 
-    protected Channel channel;
+
     protected DvObject dvObject;
     protected String driverId;
 
     /*private int status;*/
     private long size;
 
-    /**
-     * Where in the file to seek to when reading (default is zero bytes, the
-     * start of the file).
-     */
-    private long offset;
-    
     private String mimeType;
     private String fileName;
     private String varHeader;
@@ -293,26 +285,6 @@ public abstract class StorageIO<T extends DvObject> {
 
     // getters:
     
-    public Channel getChannel() throws IOException {
-        return channel;
-    }
-
-    public WritableByteChannel getWriteChannel() throws IOException {
-        if (canWrite() && channel != null && channel instanceof WritableByteChannel) {
-            return (WritableByteChannel) channel;
-        }
-
-        throw new IOException("No NIO write access in this DataAccessObject.");
-    }
-
-    public ReadableByteChannel getReadChannel() throws IOException {
-        if (!canRead() || channel == null || !(channel instanceof ReadableByteChannel)) {
-            throw new IOException("No NIO read access in this DataAccessObject.");
-        }
-
-        return (ReadableByteChannel) channel;
-    }
-    
     public DvObject getDvObject()
     {
         return dvObject;
@@ -342,14 +314,37 @@ public abstract class StorageIO<T extends DvObject> {
         return size;
     }
 
-    public long getOffset() {
-        return offset;
-    }
-
+    //Convenience method to always get the default - the original for uningested files and the preservation copy if ingested without having to specify a param 
     public InputStream getInputStream() throws IOException {
-        return in;
+        return getInputStream(FileCopy.PRESERVATION);
     }
     
+    public InputStream getInputStream(FileCopy copy) throws IOException {
+        switch (copy) {
+        case PRESERVATION:
+            // The preservation copy if it exists, otherwise the original/main file
+            if (isAuxObjectCached(defaultFileCopyExtensions.get(FileCopy.PRESERVATION))) {
+                return getAuxFileAsInputStream(defaultFileCopyExtensions.get(FileCopy.PRESERVATION));
+            }
+        case ORIGINAL:
+            // The original file if it is stored as a .orig aux file or the main file (post
+            // ~v5.12)
+            if (isAuxObjectCached(defaultFileCopyExtensions.get(FileCopy.PRESERVATION))) {
+                return getAuxFileAsInputStream(defaultFileCopyExtensions.get(FileCopy.PRESERVATION));
+            }
+        default:
+            return getMainInputStream();
+        }
+    }
+    
+    // This nominally assumes a stream has been opened, e.g. during a call to open(). Stores
+    // that don't initialize then (all at this point) should override this method to
+    // create the InputStream
+
+    protected InputStream getMainInputStream() throws IOException {
+        return in;
+    }
+
     public OutputStream getOutputStream() throws IOException {
         return out; 
     }
@@ -463,19 +458,7 @@ public abstract class StorageIO<T extends DvObject> {
         size = s;
     }
 
-    // open() has already been called. Now we can skip, if need be.
-    public void setOffset(long offset) throws IOException {
-        InputStream inputStream = getInputStream();
-        if (inputStream != null) {
-            inputStream.skip(offset);
-            // The skip has already been done. Why not record it.
-            this.offset = offset;
-        } else {
-            throw new IOException("Could not skip into InputStream because it is null");
-        }
-    }
-
-    public void setInputStream(InputStream is) {
+    protected void setMainInputStream(InputStream is) {
         in = is;
     }
     
@@ -483,9 +466,6 @@ public abstract class StorageIO<T extends DvObject> {
         out = os; 
     } 
     
-    public void setChannel(Channel c) {
-        channel = c;
-    }
 
     public void setMimeType(String mt) {
         mimeType = mt;

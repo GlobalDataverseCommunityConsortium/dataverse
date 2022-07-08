@@ -215,8 +215,7 @@ public class ImageThumbConverter {
 
             try {
                 storageIO.open();
-                //inputStream = storageIO.getInputStream();
-                pdfFileChannel = storageIO.getReadChannel();
+                pdfFileChannel = Channels.newChannel(storageIO.getInputStream());
             } catch (Exception ioex) {
                 logger.warning("caught Exception trying to open an input stream for " + storageIO.getDataFile().getStorageIdentifier());
                 return false;

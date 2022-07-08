@@ -174,7 +174,7 @@ public class DataConverter {
         } else {
             try {
                 storageIO.open();
-                try (ReadableByteChannel tabFileChannel = storageIO.getReadChannel()) {
+                try (ReadableByteChannel tabFileChannel = Channels.newChannel(storageIO.getInputStream())) {
                   return downloadFromByteChannel(tabFileChannel, storageIO.getSize());
                 }
             } catch (IOException ex) {

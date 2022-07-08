@@ -195,7 +195,7 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
     }
 
     @Override
-    public InputStream getInputStream() throws IOException {
+    protected InputStream getMainInputStream() throws IOException {
         if (super.getInputStream() == null) {
             try {
                 HttpGet get = new HttpGet(baseUrl + "/" + urlPath);
@@ -204,7 +204,7 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
                 int code = response.getStatusLine().getStatusCode();
                 switch (code) {
                 case 200:
-                    setInputStream(response.getEntity().getContent());
+                    setMainInputStream(response.getEntity().getContent());
                     break;
                 default:
                     logger.warning("Response from " + get.getURI().toString() + " was " + code);
@@ -216,24 +216,8 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
                 throw new IOException("Error retrieving: " + baseUrl + "/" + urlPath + " " + e.getMessage());
 
             }
-            setChannel(Channels.newChannel(super.getInputStream()));
         }
-        return super.getInputStream();
-    }
-
-    @Override
-    public Channel getChannel() throws IOException {
-        if (super.getChannel() == null) {
-            getInputStream();
-        }
-        return channel;
-    }
-
-    @Override
-    public ReadableByteChannel getReadChannel() throws IOException {
-        // Make sure StorageIO.channel variable exists
-        getChannel();
-        return super.getReadChannel();
+        return super.getMainInputStream();
     }
 
     @Override
@@ -358,12 +342,6 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
     public boolean exists() {
         logger.fine("Exists called");
         return (getSizeFromHttpHeader() != -1);
-    }
-
-    @Override
-    public WritableByteChannel getWriteChannel() throws UnsupportedDataAccessOperationException {
-        throw new UnsupportedDataAccessOperationException(
-                "RemoteOverlayAccessIO: there are no write Channels associated with S3 objects.");
     }
 
     @Override

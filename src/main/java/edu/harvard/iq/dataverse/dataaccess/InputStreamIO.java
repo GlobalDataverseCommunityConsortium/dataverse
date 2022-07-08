@@ -28,8 +28,7 @@ public class InputStreamIO extends StorageIO<DataFile> {
         super();
 
         this.setIsLocalFile(false);
-        this.setInputStream(inputStream);
-        setChannel(Channels.newChannel(inputStream));
+        this.setMainInputStream(inputStream);
         this.setSize(size);
     }
 
@@ -134,11 +133,6 @@ public class InputStreamIO extends StorageIO<DataFile> {
         throw new UnsupportedDataAccessOperationException("InputStreamIO: this method is not supported in this DataAccess driver.");
     }
 
-    @Override
-    public WritableByteChannel getWriteChannel() throws IOException {
-        throw new UnsupportedDataAccessOperationException("InputStreamIO: there is no write channel associated with this object.");
-    }
-    
     @Override  
     public OutputStream getOutputStream() throws IOException {
         throw new UnsupportedDataAccessOperationException("InputStreamIO: there is no output stream associated with this object.");

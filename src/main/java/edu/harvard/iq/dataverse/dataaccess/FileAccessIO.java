@@ -129,7 +129,7 @@ public class FileAccessIO<T extends DvObject> extends StorageIO<T> {
                 }
 
                 this.setOutputStream(fout);
-                setChannel(fout.getChannel());
+
                 if (!storageIdentifier.startsWith(this.driverId + DataAccess.SEPARATOR)) {
                     dvObject.setStorageIdentifier(this.driverId + DataAccess.SEPARATOR + storageIdentifier);
                 }
@@ -181,25 +181,17 @@ public class FileAccessIO<T extends DvObject> extends StorageIO<T> {
     }
     
     @Override
-    public InputStream getInputStream() throws IOException {
+    protected InputStream getMainInputStream() throws IOException {
         if (super.getInputStream() == null) {
             FileInputStream fin = openLocalFileAsInputStream();
-            this.setInputStream(fin);
+            this.setMainInputStream(fin);
         }
         if (super.getInputStream() == null) {
             throw new IOException("Failed to open local file " + getStorageLocation());
         }
-        setChannel(Channels.newChannel(super.getInputStream()));
-        return super.getInputStream();
+        return super.getMainInputStream();
     }
 
-    @Override
-    public Channel getChannel() throws IOException {
-        if (super.getChannel() == null) {
-            getInputStream();
-        }
-        return channel;
-    }
     
     @Override
     public void savePath(Path fileSystemPath) throws IOException {

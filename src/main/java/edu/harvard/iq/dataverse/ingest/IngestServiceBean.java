@@ -43,6 +43,7 @@ import edu.harvard.iq.dataverse.authorization.users.AuthenticatedUser;
 import edu.harvard.iq.dataverse.dataaccess.DataAccess;
 import edu.harvard.iq.dataverse.dataaccess.DataAccessOption;
 import edu.harvard.iq.dataverse.dataaccess.StorageIO;
+import edu.harvard.iq.dataverse.dataaccess.StorageIO.FileCopy;
 import edu.harvard.iq.dataverse.dataaccess.ImageThumbConverter;
 import edu.harvard.iq.dataverse.dataaccess.S3AccessIO;
 import edu.harvard.iq.dataverse.dataaccess.TabularSubsetGenerator;
@@ -78,6 +79,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -814,26 +816,9 @@ public class IngestServiceBean {
         BufferedInputStream inputStream = null; 
         File additionalData = null;
         File localFile = null;
-        StorageIO<DataFile> storageIO = null;
-                
-        try {
-            storageIO = dataFile.getStorageIO();
-            storageIO.open();
-             
-            if (storageIO.isLocalFile()) {
-                localFile = storageIO.getFileSystemPath().toFile();
-                inputStream = new BufferedInputStream(storageIO.getInputStream());
-            } else {
-                
-                localFile = File.createTempFile("tempIngestSourceFile", ".tmp");
-				try (ReadableByteChannel dataFileChannel = storageIO.getReadChannel();
-						FileChannel tempIngestSourceChannel = new FileOutputStream(localFile).getChannel();) {
 
-					tempIngestSourceChannel.transferFrom(dataFileChannel, 0, storageIO.getSize());
-				}
-                inputStream = new BufferedInputStream(new FileInputStream(localFile));
-                logger.fine("Saved "+storageIO.getSize()+" bytes in a local temp file.");
-            }
+        try {
+             inputStream = openOriginalFile(dataFile);
         } catch (IOException ioEx) {
             dataFile.SetIngestProblem();
             
@@ -1045,20 +1030,21 @@ public class IngestServiceBean {
         return ingestSuccessful;
     }
 
-    private BufferedInputStream openFile(DataFile dataFile) throws IOException {
+    private BufferedInputStream openOriginalFile(DataFile dataFile) throws IOException {
         BufferedInputStream inputStream;
         StorageIO<DataFile> storageIO = dataFile.getStorageIO();
         storageIO.open();
         if (storageIO.isLocalFile()) {
-            inputStream = new BufferedInputStream(storageIO.getInputStream());
+            inputStream = new BufferedInputStream(storageIO.getInputStream(FileCopy.ORIGINAL));
         } else {
-        	File tempFile = File.createTempFile("tempIngestSourceFile", ".tmp");
-			try (ReadableByteChannel dataFileChannel = storageIO.getReadChannel();
-					FileChannel tempIngestSourceChannel = new FileOutputStream(tempFile).getChannel();) {
-				tempIngestSourceChannel.transferFrom(dataFileChannel, 0, storageIO.getSize());
-			}
+            File tempFile = File.createTempFile("tempIngestSourceFile", ".tmp");
+            try (ReadableByteChannel dataFileChannel = Channels.newChannel(storageIO.getInputStream(FileCopy.ORIGINAL));
+                    FileOutputStream fos = new FileOutputStream(tempFile);
+                    FileChannel tempIngestSourceChannel = fos.getChannel()) {
+                tempIngestSourceChannel.transferFrom(dataFileChannel, 0, storageIO.getSize());
+            }
             inputStream = new BufferedInputStream(new FileInputStream(tempFile));
-            logger.fine("Saved "+storageIO.getSize()+" bytes in a local temp file.");
+            logger.fine("Saved " + storageIO.getSize() + " bytes in a local temp file.");
         }
         return inputStream;
     }

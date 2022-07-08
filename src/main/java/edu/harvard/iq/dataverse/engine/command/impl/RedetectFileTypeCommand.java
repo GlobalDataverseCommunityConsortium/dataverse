@@ -16,6 +16,7 @@ import edu.harvard.iq.dataverse.util.FileTypeDetection;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.logging.Logger;
@@ -54,8 +55,9 @@ public class RedetectFileTypeCommand extends AbstractCommand<DataFile> {
                 // Need to create a temporary local file: 
 
                 tempFile = File.createTempFile("tempFileTypeCheck", ".tmp");
-                try (ReadableByteChannel targetFileChannel = (ReadableByteChannel) storageIO.getReadChannel();
-                		FileChannel tempFileChannel = new FileOutputStream(tempFile).getChannel();) {
+                try (ReadableByteChannel targetFileChannel = Channels.newChannel(storageIO.getInputStream());
+                        FileOutputStream fos = new FileOutputStream(tempFile);
+                        FileChannel tempFileChannel = fos.getChannel();) {
                     tempFileChannel.transferFrom(targetFileChannel, 0, storageIO.getSize());
                 }
                 localFile = tempFile;

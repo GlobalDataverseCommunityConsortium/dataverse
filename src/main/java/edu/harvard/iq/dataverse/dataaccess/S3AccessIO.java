@@ -284,7 +284,7 @@ public class S3AccessIO<T extends DvObject> extends StorageIO<T> {
     public InputStream getInputStream() throws IOException {
         if (super.getInputStream() == null) {
             try {
-                setInputStream(s3.getObject(new GetObjectRequest(bucketName, key)).getObjectContent());
+                setMainInputStream(s3.getObject(new GetObjectRequest(bucketName, key)).getObjectContent());
             } catch (SdkClientException sce) {
                 throw new IOException("Cannot get S3 object " + key + " (" + sce.getMessage() + ")");
             }
@@ -292,24 +292,10 @@ public class S3AccessIO<T extends DvObject> extends StorageIO<T> {
         if (super.getInputStream() == null) {
             throw new IOException("Cannot get InputStream for S3 Object" + key);
         }
-        setChannel(Channels.newChannel(super.getInputStream()));
+
         return super.getInputStream();
     }
 
-    @Override
-    public Channel getChannel() throws IOException {
-        if (super.getChannel() == null) {
-            getInputStream();
-        }
-        return channel;
-    }
-    
-    @Override
-    public ReadableByteChannel getReadChannel() throws IOException {
-        //Make sure StorageIO.channel variable exists
-        getChannel();
-        return super.getReadChannel();
-    }
 
     // StorageIO method for copying a local Path (for ex., a temp file), into this DataAccess location:
     @Override
@@ -742,11 +728,6 @@ public class S3AccessIO<T extends DvObject> extends StorageIO<T> {
             logger.warning("Caught an AmazonClientException in S3AccessIO.exists():    " + ase.getMessage());
             return false;
         }
-    }
-
-    @Override
-    public WritableByteChannel getWriteChannel() throws UnsupportedDataAccessOperationException {
-        throw new UnsupportedDataAccessOperationException("S3AccessIO: there are no write Channels associated with S3 objects.");
     }
 
     @Override

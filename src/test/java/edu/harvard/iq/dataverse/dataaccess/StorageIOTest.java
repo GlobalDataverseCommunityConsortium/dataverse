@@ -112,7 +112,7 @@ public class StorageIOTest {
     public void testInputStream() throws IOException {
         assertEquals(null, instance.getInputStream());
         InputStream is = new ByteArrayInputStream("Test".getBytes());
-        instance.setInputStream(is);
+        instance.setMainInputStream(is);
         assertEquals(is, instance.getInputStream());
         instance.closeInputStream();
         assertEquals(null, instance.getErrorMessage());

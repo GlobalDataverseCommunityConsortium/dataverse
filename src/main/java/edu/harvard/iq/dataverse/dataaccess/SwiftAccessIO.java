@@ -151,7 +151,7 @@ public class SwiftAccessIO<T extends DvObject> extends StorageIO<T> {
                     throw new IOException("Failed to open Swift file " + getStorageLocation());
                 }
 
-                this.setInputStream(fin);
+                this.setMainInputStream(fin);
             } else if (isWriteAccess) {
                 swiftFileObject = initializeSwiftFileObject(true);
             }
@@ -162,24 +162,15 @@ public class SwiftAccessIO<T extends DvObject> extends StorageIO<T> {
     }
 
     @Override
-    public InputStream getInputStream() throws IOException {
+    protected InputStream getMainInputStream() throws IOException {
         if (super.getInputStream() == null) {
             InputStream fin = openSwiftFileAsInputStream();
-            this.setInputStream(fin);
+            this.setMainInputStream(fin);
         }
         if (super.getInputStream() == null) {
             throw new IOException("Failed to open Swift file " + getStorageLocation());
         }
-        setChannel(Channels.newChannel(super.getInputStream()));
-        return super.getInputStream();
-    }
-
-    @Override
-    public Channel getChannel() throws IOException {
-        if (super.getChannel() == null) {
-            getInputStream();
-        }
-        return channel;
+        return super.getMainInputStream();
     }
 
     // StorageIO method for copying a local Path (for ex., a temp file), into this DataAccess location:
@@ -466,11 +457,6 @@ public class SwiftAccessIO<T extends DvObject> extends StorageIO<T> {
         }
 
         return true;
-    }
-
-    @Override
-    public WritableByteChannel getWriteChannel() throws IOException {
-        throw new UnsupportedDataAccessOperationException("SwiftAccessIO: there are no write Channels associated with Swift objects.");
     }
 
     @Override
