@@ -1008,16 +1008,8 @@ public class IngestServiceBean {
                     StorageIO<DataFile> dataAccess = dataFile.getStorageIO();
                     dataAccess.open();
 
-                    // and we want to save the original of the ingested file: 
-                    try {
-                        dataAccess.backupAsAux(FileUtil.SAVED_ORIGINAL_FILENAME_EXTENSION);
-                        logger.fine("Saved the ingested original as a backup aux file "+FileUtil.SAVED_ORIGINAL_FILENAME_EXTENSION);
-                    } catch (IOException iox) {
-                        logger.warning("Failed to save the ingested original! " + iox.getMessage());
-                    }
-
                     // Replace contents of the file with the tab-delimited data produced:
-                    dataAccess.savePath(Paths.get(tabFile.getAbsolutePath()));
+                    dataAccess.addPreservationVersion(Paths.get(tabFile.getAbsolutePath()));
                     // Reset the file size: 
                     dataFile.setFilesize(dataAccess.getSize());
                     

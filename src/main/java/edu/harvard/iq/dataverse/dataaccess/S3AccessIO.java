@@ -490,25 +490,13 @@ public class S3AccessIO<T extends DvObject> extends StorageIO<T> {
     }
 
     @Override
-    public void backupAsAux(String auxItemTag) throws IOException {
-        String destinationKey = getDestinationKey(auxItemTag);
-        try {
-            s3.copyObject(new CopyObjectRequest(bucketName, key, bucketName, destinationKey));
-        } catch (AmazonClientException ase) {
-            logger.warning("Caught an AmazonClientException in S3AccessIO.backupAsAux:    " + ase.getMessage());
-            throw new IOException("S3AccessIO: Unable to backup original auxiliary object");
-        }
-    }
-    
-    
-    @Override
     public void revertBackupAsAux(String auxItemTag) throws IOException {
         String destinationKey = getDestinationKey(auxItemTag);
         try {
             s3.copyObject(new CopyObjectRequest(bucketName, destinationKey,  bucketName, key));
             deleteAuxObject(auxItemTag);
         } catch (AmazonClientException ase) {
-            logger.warning("Caught an AmazonServiceException in S3AccessIO.backupAsAux:    " + ase.getMessage());
+            logger.warning("Caught an AmazonServiceException in S3AccessIO.revertBackupAsAux:    " + ase.getMessage());
             throw new IOException("S3AccessIO: Unable to revert backup auxiliary object");
         }
     }
@@ -671,6 +659,8 @@ public class S3AccessIO<T extends DvObject> extends StorageIO<T> {
 
     @Override
     public void deleteAllAuxObjects() throws IOException {
+        
+        //ToDo - use ListAuxObjects
         if (!isDirectAccess() && !this.canWrite()) {
             open(DataAccessOption.WRITE_ACCESS);
         }

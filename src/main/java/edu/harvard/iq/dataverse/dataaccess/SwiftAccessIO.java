@@ -318,29 +318,6 @@ public class SwiftAccessIO<T extends DvObject> extends StorageIO<T> {
     }
 
     @Override
-    public void backupAsAux(String auxItemTag) throws IOException {
-
-        if (swiftFileObject == null || swiftContainer == null) {
-            open();
-        }
-
-        try {
-            StoredObject swiftAuxObject = openSwiftAuxFile(true, auxItemTag);
-            swiftFileObject.copyObject(swiftContainer, swiftAuxObject);
-            // I'm assuming we don't need to delete the main object here - ?
-            //swiftFileObject.delete();
-
-        } catch (IOException ioex) {
-            String failureMsg = ioex.getMessage();
-            if (failureMsg == null) {
-                failureMsg = "Swift AccessIO: Unknown exception occured while uploading a local file into a Swift StoredObject";
-            }
-
-            throw new IOException(failureMsg);
-        }
-    }
-    
-    @Override
     public void revertBackupAsAux(String auxItemTag) throws IOException {
         // We are going to try and overwrite the current main file 
         // with the contents of the stored original, currently saved as an 

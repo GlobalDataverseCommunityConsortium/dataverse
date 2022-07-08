@@ -89,9 +89,9 @@ public class UningestFileCommand extends AbstractVoidCommand  {
         // -- L.A. May 2018
         
         try {
-            dataAccess.revertBackupAsAux(FileUtil.SAVED_ORIGINAL_FILENAME_EXTENSION);
+            dataAccess.removePreservationVersion();
         } catch (IOException ioex) {
-            String errorMessage = "Failed to revert backup as Aux for " + uningest.getStorageIdentifier() + " attempting to revert tabular ingest" +  " aborting. (";
+            String errorMessage = "Failed to remove Preservation copy of file for " + uningest.getStorageIdentifier() + " attempting to revert tabular ingest" +  " aborting. (";
             if (ioex.getMessage() != null) {
                 errorMessage += "(" + ioex.getMessage() + ")";
             } else {
@@ -163,13 +163,6 @@ public class UningestFileCommand extends AbstractVoidCommand  {
             ctxt.em().merge(dv);
             ctxt.datasetVersion().fixMissingUnf(dv.getId().toString(), true);
         }
-
-        try{
-            dataAccess.deleteAllAuxObjects();
-        } catch (IOException e){
-            logger.warning("Io Exception deleting all aux objects : " + uningest.getId());
-        }
-        
     }
     
     

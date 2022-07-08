@@ -52,8 +52,20 @@ import java.util.Map;
 
 public abstract class StorageIO<T extends DvObject> {
 
+    public enum FileCopy {
+        ORIGINAL,
+        PRESERVATION
+    };
+    
+    //Pre ~v5.12, when ingest occurred, the original file was moved to have a ".orig" extension and the ingested/preservation copy was added using the main storageidentifer
+    //Post ~v5.12, the orignal file remains where it is (more efficient in object stores), and the ingested/preservation copy is added with a ".preservation" extension
+    //Indivudual store classes can change this mapping as desired
+    private static Map<FileCopy, String> defaultFileCopyExtensions = Map.of(FileCopy.ORIGINAL, "orig", FileCopy.PRESERVATION, "preservation");
+    
+    //All Known aux file extensions produced by ingest
+    String[] ingestAuxObjects= {defaultFileCopyExtensions.get(FileCopy.PRESERVATION), "prep", "RSpace", "tab"};
+    
     public StorageIO() {
-
     }
     
     public StorageIO(String storageLocation, String driverId) {
@@ -115,6 +127,37 @@ public abstract class StorageIO<T extends DvObject> {
     // temp file, into this DataAccess location):
     public abstract void savePath(Path fileSystemPath) throws IOException;
     
+    public void addPreservationVersion(Path fileSystemPath) throws IOException {
+        if(isAuxObjectCached(defaultFileCopyExtensions.get(FileCopy.ORIGINAL))|| isAuxObjectCached(defaultFileCopyExtensions.get(FileCopy.PRESERVATION))) {
+            throw new IOException("Preservation version already exists");
+        }
+        savePathAsAux(fileSystemPath, defaultFileCopyExtensions.get(FileCopy.PRESERVATION));
+    }
+    
+    public void removePreservationVersion() throws IOException {
+        boolean origExists = isAuxObjectCached(defaultFileCopyExtensions.get(FileCopy.ORIGINAL));
+        boolean preserveExists = isAuxObjectCached(defaultFileCopyExtensions.get(FileCopy.PRESERVATION));
+        if(!origExists && !preserveExists) {
+            throw new IOException("Preservation version doesn't exist");
+        }
+        if(origExists) {
+            revertBackupAsAux(defaultFileCopyExtensions.get(FileCopy.ORIGINAL));
+            deleteIngestFiles();
+        }
+        //Will also remove the PRESERVATION version for v5.12+ datafiles 
+        deleteIngestFiles();
+    }
+    
+    protected void deleteIngestFiles() throws IOException {
+        List<String> allAuxObjects = listAuxObjects();
+        
+        for(String ingestAuxObject: ingestAuxObjects) {
+            if(allAuxObjects.contains(ingestAuxObject)) {
+                deleteAuxObject(ingestAuxObject);
+            }
+        }
+    }
+
     // same, for an InputStream:
     /**
      * This method copies a local InputStream into this DataAccess location.
@@ -161,8 +204,6 @@ public abstract class StorageIO<T extends DvObject> {
     public abstract Path getAuxObjectAsPath(String auxItemTag) throws IOException; 
     
     public abstract boolean isAuxObjectCached(String auxItemTag) throws IOException; 
-    
-    public abstract void backupAsAux(String auxItemTag) throws IOException; 
     
     public abstract void revertBackupAsAux(String auxItemTag) throws IOException; 
     

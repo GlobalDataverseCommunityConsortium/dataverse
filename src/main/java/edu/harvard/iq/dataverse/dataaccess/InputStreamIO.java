@@ -88,11 +88,6 @@ public class InputStreamIO extends StorageIO<DataFile> {
     }
 
     @Override
-    public void backupAsAux(String auxItemTag) throws IOException {
-        throw new UnsupportedDataAccessOperationException("InputStreamIO: this method is not supported in this DataAccess driver.");
-    }
-
-    @Override
     public void savePathAsAux(Path fileSystemPath, String auxItemTag) throws IOException {
         throw new UnsupportedDataAccessOperationException("InputStreamIO: this method is not supported in this DataAccess driver.");
     }

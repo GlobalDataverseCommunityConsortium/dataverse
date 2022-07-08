@@ -1841,7 +1841,7 @@ public class FileUtil implements java.io.Serializable  {
                     if (recalculatedChecksum.equals(dataFile.getChecksumValue())) {
                         fixed = true;
                         try {
-                            storage.revertBackupAsAux(FileUtil.SAVED_ORIGINAL_FILENAME_EXTENSION);
+                            storage.removePreservationVersion();
                         } catch (IOException ioex) {
                             fixed = false;
                         }

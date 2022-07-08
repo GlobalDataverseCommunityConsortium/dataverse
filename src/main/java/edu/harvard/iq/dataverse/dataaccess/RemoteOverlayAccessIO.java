@@ -289,11 +289,6 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
     }
 
     @Override
-    public void backupAsAux(String auxItemTag) throws IOException {
-        baseStore.backupAsAux(auxItemTag);
-    }
-
-    @Override
     public void revertBackupAsAux(String auxItemTag) throws IOException {
         baseStore.revertBackupAsAux(auxItemTag);
     }

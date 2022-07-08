@@ -34,9 +34,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.logging.Logger;
 
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-
 // Dataverse imports:
 import edu.harvard.iq.dataverse.DataFile;
 import edu.harvard.iq.dataverse.Dataset;
@@ -350,13 +347,6 @@ public class FileAccessIO<T extends DvObject> extends StorageIO<T> {
     
 
     @Override 
-    public void backupAsAux(String auxItemTag) throws IOException {
-        Path auxPath = getAuxObjectAsPath(auxItemTag);
-        
-        Files.move(getFileSystemPath(), auxPath, StandardCopyOption.REPLACE_EXISTING);
-    }
-    
-    @Override 
     public void revertBackupAsAux(String auxItemTag) throws IOException {
         Path auxPath = getAuxObjectAsPath(auxItemTag);
         Files.move(auxPath, getFileSystemPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -531,7 +521,7 @@ public class FileAccessIO<T extends DvObject> extends StorageIO<T> {
 
     }
 
-    public FileInputStream openLocalFileAsInputStream () {
+    private FileInputStream openLocalFileAsInputStream () {
         FileInputStream in;
 
         try {
@@ -551,7 +541,7 @@ public class FileAccessIO<T extends DvObject> extends StorageIO<T> {
         return in;
     }
     
-    public FileOutputStream openLocalFileAsOutputStream () {
+    private FileOutputStream openLocalFileAsOutputStream () {
         FileOutputStream out;
 
         try {
