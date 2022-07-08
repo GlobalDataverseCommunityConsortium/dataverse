@@ -46,6 +46,12 @@ public class SwiftAccessIO<T extends DvObject> extends StorageIO<T> {
 
     private String swiftFolderPath;
     private String swiftLocation; 
+    
+    private String temporarySwiftUrl;
+    private String tempUrlExpiry;
+    private String tempUrlSignature;
+
+    private String swiftFileName;
 
     private static final Logger logger = Logger.getLogger("edu.harvard.iq.dataverse.dataaccess.SwiftAccessIO");
 
@@ -837,7 +843,6 @@ public class SwiftAccessIO<T extends DvObject> extends StorageIO<T> {
         }
     }
 
-    @Override
     public String getSwiftContainerName() {
         if (dvObject instanceof DataFile) {
             String authorityNoSlashes = this.getDataFile().getOwner().getAuthorityForFileStorage().replace("/", swiftFolderPathSeparator);
@@ -848,6 +853,40 @@ public class SwiftAccessIO<T extends DvObject> extends StorageIO<T> {
         return null;
      }
 
+    
+    public String getTemporarySwiftUrl(){
+        return temporarySwiftUrl;
+    }
+    
+    public String getTempUrlExpiry() {
+        return tempUrlExpiry;
+    }
+    
+    public String getTempUrlSignature() {
+        return tempUrlSignature;
+    }
+    
+    public String getSwiftFileName() {
+        return swiftFileName;
+    }
+    
+    private void setTemporarySwiftUrl(String u){
+        temporarySwiftUrl = u;
+    }
+    
+    private void setTempUrlExpiry(Long u){
+        tempUrlExpiry = String.valueOf(u);
+    }
+    
+    private void setSwiftFileName(String u) {
+        swiftFileName = u;
+    }
+    
+    private void setTempUrlSignature(String u){
+        tempUrlSignature = u;
+    }
+
+    
     //https://gist.github.com/ishikawa/88599
     public static String toHexString(byte[] bytes) {
         Formatter formatter = new Formatter();

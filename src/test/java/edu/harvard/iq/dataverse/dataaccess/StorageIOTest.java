@@ -15,8 +15,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.nio.channels.Channel;
 import java.util.Arrays;
 import java.util.List;
 //import org.apache.commons.httpclient.Header;
@@ -30,34 +28,6 @@ import static org.junit.Assert.*;
  */
 public class StorageIOTest {
     StorageIO<Dataset> instance = new FileAccessIO<>();
-
-    @Test
-    public void testGetChannel() throws IOException {
-        assertEquals(null, instance.getChannel());
-        Channel c = new RandomAccessFile("src/main/java/propertyFiles/Bundle.properties", "r").getChannel();
-        instance.setChannel(c);
-        assertEquals(c, instance.getChannel());
-    }
-
-    @Test
-    public void testGetWriteChannel() throws Exception {
-        try {
-            instance.getWriteChannel();
-            fail("Should not have write access");
-        } catch (IOException ex) {
-            assertEquals("No NIO write access in this DataAccessObject.", ex.getMessage());
-        }
-    }
-
-    @Test
-    public void testGetReadChannel() throws Exception {
-        try {
-            instance.getReadChannel();
-            fail("Should not have read access");
-        } catch (IOException ex) {
-            assertEquals("No NIO read access in this DataAccessObject.", ex.getMessage());
-        }
-    }
 
     @Test
     public void testGetDvObject() {
@@ -93,13 +63,6 @@ public class StorageIOTest {
         instance.setRequest(req);
         assertEquals(req, instance.getRequest());
     }
-
-    /*@Test
-    public void testStatus() {
-        assertEquals(0, instance.getStatus());
-        instance.setStatus(1);
-        assertEquals(1, instance.getStatus());
-    }*/
 
     @Test
     public void testSize() {
@@ -159,70 +122,6 @@ public class StorageIOTest {
         assertEquals(null, instance.getRemoteUrl());
         instance.setRemoteUrl("Test");
         assertEquals("Test", instance.getRemoteUrl());
-    }
-
-    @Test
-    public void testSwiftContainerName() {
-        assertEquals(null, instance.getSwiftContainerName());
-        instance.setSwiftContainerName("Swift");
-        assertEquals("Swift", instance.getSwiftContainerName());
-    }
-
-    /*
-    @Test
-    public void testHTTPMethod() {
-        assertEquals(null, instance.getHTTPMethod());
-        GetMethod method = new GetMethod();
-        instance.setHTTPMethod(method);
-        assertEquals(method, instance.getHTTPMethod());
-        instance.releaseConnection();
-    }
-
-    @Test
-    public void testResponseHeaders() {
-        assertArrayEquals(null, instance.getResponseHeaders());
-        Header[] headers = new Header[]{new Header("Test", ""), new Header()};
-        instance.setResponseHeaders(headers);
-        assertArrayEquals(headers, instance.getResponseHeaders());
-    }
-
-    @Test
-    public void testFileLocation() {
-        assertEquals(true, instance.isLocalFile());
-        instance.setIsLocalFile(false);
-        assertEquals(false, instance.isLocalFile());
-
-        assertEquals(false, instance.isRemoteAccess());
-        instance.setIsRemoteAccess(true);
-        assertEquals(true, instance.isRemoteAccess());
-    }
-
-    @Test
-    public void testHttpAccess() {
-        assertEquals(false, instance.isHttpAccess());
-        instance.setIsHttpAccess(true);
-        assertEquals(true, instance.isHttpAccess());
-    }*/
-
-    @Test
-    public void testDownloadSupported() {
-        assertEquals(true, instance.isDownloadSupported());
-        instance.setIsDownloadSupported(false);
-        assertEquals(false, instance.isDownloadSupported());
-    }
-
-    @Test
-    public void testSubsetSupported() {
-        assertEquals(false, instance.isSubsetSupported());
-        instance.setIsSubsetSupported(true);
-        assertEquals(true, instance.isSubsetSupported());
-    }
-
-    @Test
-    public void testZippedStream() {
-        assertEquals(false, instance.isZippedStream());
-        instance.setIsZippedStream(true);
-        assertEquals(true, instance.isZippedStream());
     }
 
     @Test

@@ -249,7 +249,6 @@ public abstract class StorageIO<T extends DvObject> {
     protected DvObject dvObject;
     protected String driverId;
 
-    /*private int status;*/
     private long size;
 
     private String mimeType;
@@ -257,31 +256,15 @@ public abstract class StorageIO<T extends DvObject> {
     private String varHeader;
     private String errorMessage;
 
-    private String temporarySwiftUrl;
-    private String tempUrlExpiry;
-    private String tempUrlSignature;
-
-    private String swiftContainerName;
 
     private boolean isLocalFile = false;
-    /*private boolean isRemoteAccess = false;*/
-    /*private boolean isHttpAccess = false;*/
     private boolean noVarHeader = false;
 
-    // For remote downloads:
-    private boolean isZippedStream = false;
-    private boolean isDownloadSupported = true;
-    private boolean isSubsetSupported = false;
-
-    private String swiftFileName;
 
     private String remoteUrl;
     protected String remoteStoreName = null;
     protected URL remoteStoreUrl = null;
     
-    // For HTTP-based downloads:
-    /*private GetMethod method = null;
-    private Header[] responseHeaders;*/
 
     // getters:
     
@@ -345,7 +328,7 @@ public abstract class StorageIO<T extends DvObject> {
         return in;
     }
 
-    public OutputStream getOutputStream() throws IOException {
+    protected OutputStream getOutputStream() throws IOException {
         return out; 
     }
 
@@ -367,26 +350,6 @@ public abstract class StorageIO<T extends DvObject> {
 
     public String getRemoteUrl() {
         return remoteUrl;
-    }
-
-    public String getTemporarySwiftUrl(){
-        return temporarySwiftUrl;
-    }
-    
-    public String getTempUrlExpiry() {
-        return tempUrlExpiry;
-    }
-    
-    public String getTempUrlSignature() {
-        return tempUrlSignature;
-    }
-    
-    public String getSwiftFileName() {
-        return swiftFileName;
-    }
-
-    public String getSwiftContainerName(){
-        return swiftContainerName;
     }
 
     public String getRemoteStoreName() {
@@ -424,18 +387,6 @@ public abstract class StorageIO<T extends DvObject> {
     /*public boolean isHttpAccess() {
         return isHttpAccess;
     }*/
-
-    public boolean isDownloadSupported() {
-        return isDownloadSupported;
-    }
-
-    public boolean isSubsetSupported() {
-        return isSubsetSupported;
-    }
-
-    public boolean isZippedStream() {
-        return isZippedStream;
-    }
 
     public boolean noVarHeader() {
         return noVarHeader;
@@ -487,68 +438,14 @@ public abstract class StorageIO<T extends DvObject> {
         remoteUrl = u;
     }
 
-    public void setTemporarySwiftUrl(String u){
-        temporarySwiftUrl = u;
-    }
-    
-    public void setTempUrlExpiry(Long u){
-        tempUrlExpiry = String.valueOf(u);
-    }
-    
-    public void setSwiftFileName(String u) {
-        swiftFileName = u;
-    }
-    
-    public void setTempUrlSignature(String u){
-        tempUrlSignature = u;
-    }
-
-    public void setSwiftContainerName(String u){
-        swiftContainerName = u;
-    }
-
-    /*public void setHTTPMethod(GetMethod hm) {
-        method = hm;
-    }*/
-
-    /*public void setResponseHeaders(Header[] headers) {
-        responseHeaders = headers;
-    }*/
-
     public void setIsLocalFile(boolean f) {
         isLocalFile = f;
     }
 
-    /*public void setIsRemoteAccess(boolean r) {
-        isRemoteAccess = r;
-    }*/
-
-    /*public void setIsHttpAccess(boolean h) {
-        isHttpAccess = h;
-    }*/
-
-    public void setIsDownloadSupported(boolean d) {
-        isDownloadSupported = d;
-    }
-
-    public void setIsSubsetSupported(boolean s) {
-        isSubsetSupported = s;
-    }
-
-    public void setIsZippedStream(boolean zs) {
-        isZippedStream = zs;
-    }
 
     public void setNoVarHeader(boolean nvh) {
         noVarHeader = nvh;
     }
-
-        // connection management methods:
-    /*public void releaseConnection() {
-        if (method != null) {
-            method.releaseConnection();
-        }
-    }*/
 
     public void closeInputStream() {
         if (in != null) {

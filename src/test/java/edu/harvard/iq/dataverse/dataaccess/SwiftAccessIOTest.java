@@ -12,8 +12,6 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
