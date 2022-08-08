@@ -55,6 +55,9 @@ public abstract class StorageIO<T extends DvObject> {
         PRESERVATION
     };
     
+    
+    //ToDo - add check to see if the store exists (i.e. it's type/label/other required fields(?) exist? Seems like we should fail early in these cases, with direct/globus/remote stores with directupload/accepting a storageidentifier param being most vulnerable.
+    
     //Pre ~v5.12, when ingest occurred, the original file was moved to have a ".orig" extension and the ingested/preservation copy was added using the main storageidentifer
     //Post ~v5.12, the orignal file remains where it is (more efficient in object stores), and the ingested/preservation copy is added with a ".preservation" extension
     //Indivudual store classes can change this mapping as desired
