@@ -36,7 +36,7 @@ import edu.harvard.iq.dataverse.branding.BrandingUtil;
 import edu.harvard.iq.dataverse.dataaccess.DataAccess;
 import edu.harvard.iq.dataverse.dataset.DatasetUtil;
 import edu.harvard.iq.dataverse.license.License;
-import edu.harvard.iq.dataverse.globus.fileDetailsHolder;
+import edu.harvard.iq.dataverse.globus.FileDetailsHolder;
 import edu.harvard.iq.dataverse.privateurl.PrivateUrl;
 import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
 import edu.harvard.iq.dataverse.util.DatasetFieldWalker;
@@ -344,7 +344,7 @@ public class JsonPrinter {
                 .add("metadataLanguage", ds.getMetadataLanguage());
     }
 
-    public static JsonObjectBuilder json(fileDetailsHolder ds) {
+    public static JsonObjectBuilder json(FileDetailsHolder ds) {
         return Json.createObjectBuilder().add(ds.getStorageID() ,
                 Json.createObjectBuilder()
                 .add("id", ds.getStorageID() )
@@ -364,7 +364,7 @@ public class JsonPrinter {
                 .add("UNF", dsv.getUNF()).add("archiveTime", format(dsv.getArchiveTime()))
                 .add("lastUpdateTime", format(dsv.getLastUpdateTime())).add("releaseTime", format(dsv.getReleaseTime()))
                 .add("createTime", format(dsv.getCreateTime()));
-        License license = dsv.getTermsOfUseAndAccess().getLicense();
+        License license = DatasetUtil.getLicense(dsv);;
         if (license != null) {
             // Standard license
             bld.add("license", jsonObjectBuilder()

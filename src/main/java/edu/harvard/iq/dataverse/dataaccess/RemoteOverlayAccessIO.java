@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.Channel;
 import java.nio.channels.Channels;
@@ -80,8 +82,9 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
         this.setIsLocalFile(false);
         configureStores(req, driverId, null);
         logger.fine("Parsing storageidentifier: " + dvObject.getStorageIdentifier());
-        // TODO: validate the storage location supplied
         urlPath = dvObject.getStorageIdentifier().substring(dvObject.getStorageIdentifier().lastIndexOf("//") + 2);
+        validatePath(urlPath);
+        
         logger.fine("Base URL: " + urlPath);
     }
 
@@ -90,10 +93,21 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
         this.setIsLocalFile(false);
         configureStores(null, driverId, storageLocation);
 
-        // TODO: validate the storage location supplied
         urlPath = storageLocation.substring(storageLocation.lastIndexOf("//") + 2);
+        validatePath(urlPath);
         logger.fine("Base URL: " + urlPath);
     }
+    
+    private void validatePath(String path) throws IOException {
+        try {
+            URI absoluteURI = new URI(baseUrl + "/" + urlPath);
+            if(!absoluteURI.normalize().toString().startsWith(baseUrl)) {
+                throw new IOException("storageidentifier doesn't start with " + this.driverId + "'s base-url");
+            }
+        } catch(URISyntaxException use) {
+            throw new IOException("Could not interpret storageidentifier in remote store " + this.driverId);
+        }
+     }
 
     @Override
     public void open(DataAccessOption... options) throws IOException {
@@ -188,7 +202,7 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
             } finally {
                 EntityUtils.consume(response.getEntity());
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.warning(e.getMessage());
         }
         return size;
@@ -198,7 +212,7 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
     protected InputStream getMainInputStream() throws IOException {
         if (super.getInputStream() == null) {
             try {
-                HttpGet get = new HttpGet(baseUrl + "/" + urlPath);
+                HttpGet get = new HttpGet(generateTemporaryDownloadUrl(null, null, null));
                 CloseableHttpResponse response = getSharedHttpClient().execute(get, localContext);
 
                 int code = response.getStatusLine().getStatusCode();
@@ -318,8 +332,14 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
     public String getStorageLocation() throws IOException {
         String fullStorageLocation = dvObject.getStorageIdentifier();
         logger.fine("storageidentifier: " + fullStorageLocation);
-        fullStorageLocation = fullStorageLocation.substring(fullStorageLocation.lastIndexOf(DataAccess.SEPARATOR) + DataAccess.SEPARATOR.length());
-        fullStorageLocation = fullStorageLocation.substring(0, fullStorageLocation.indexOf("//"));
+        int driverIndex = fullStorageLocation.lastIndexOf(DataAccess.SEPARATOR);
+        if(driverIndex >=0) {
+          fullStorageLocation = fullStorageLocation.substring(fullStorageLocation.lastIndexOf(DataAccess.SEPARATOR) + DataAccess.SEPARATOR.length());
+        }
+        int suffixIndex = fullStorageLocation.indexOf("//");
+        if(suffixIndex >=0) {
+          fullStorageLocation = fullStorageLocation.substring(0, fullStorageLocation.indexOf("//"));
+        }
         if (this.getDvObject() instanceof Dataset) {
             fullStorageLocation = this.getDataset().getAuthorityForFileStorage() + "/"
                     + this.getDataset().getIdentifierForFileStorage() + "/" + fullStorageLocation;
@@ -363,6 +383,10 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
         }
         return false;
     }
+    
+    public boolean downloadRedirectEnabled(String auxObjectTag) {
+        return baseStore.downloadRedirectEnabled(auxObjectTag);
+    }
 
     @Override
     public String generateTemporaryDownloadUrl(String auxiliaryTag, String auxiliaryType, String auxiliaryFileName)
@@ -370,7 +394,7 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
 
         // ToDo - support remote auxiliary Files
         if (auxiliaryTag == null) {
-            String secretKey = System.getProperty("dataverse.files." + this.driverId + ".secretkey");
+            String secretKey = System.getProperty("dataverse.files." + this.driverId + ".secret-key");
             if (secretKey == null) {
                 return baseUrl + "/" + urlPath;
             } else {
@@ -399,12 +423,25 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
     }
 
     private void configureStores(DataAccessRequest req, String driverId, String storageLocation) throws IOException {
-        baseUrl = System.getProperty("dataverse.files." + this.driverId + ".baseUrl");
+        baseUrl = System.getProperty("dataverse.files." + this.driverId + ".base-url");
+        if (baseUrl == null) {
+            throw new IOException("dataverse.files." + this.driverId + ".base-url is required");
+        } else {
+            try {
+                new URI(baseUrl);
+            } catch (Exception e) {
+                logger.warning(
+                        "Trouble interpreting base-url for store: " + this.driverId + " : " + e.getLocalizedMessage());
+                throw new IOException("Can't interpret base-url as a URI");
+            }
+
+        }
 
         if (baseStore == null) {
-            String baseDriverId = System.getProperty("dataverse.files." + driverId + ".baseStore");
+            String baseDriverId = getBaseStoreIdFor(driverId);
             String fullStorageLocation = null;
-            String baseDriverType = System.getProperty("dataverse.files." + baseDriverId + ".type");
+            String baseDriverType = System.getProperty("dataverse.files." + baseDriverId + ".type", DataAccess.DEFAULT_STORAGE_DRIVER_IDENTIFIER);
+            
             if(dvObject  instanceof Dataset) {
                 baseStore = DataAccess.getStorageIO(dvObject, req, baseDriverId);
             } else {
@@ -420,7 +457,7 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
                         break;
                     case DataAccess.FILE:
                         fullStorageLocation = baseDriverId + DataAccess.SEPARATOR
-                                + System.getProperty("dataverse.files." + baseDriverId + ".directory") + "/"
+                                + System.getProperty("dataverse.files." + baseDriverId + ".directory", "/tmp/files") + "/"
                                 + fullStorageLocation;
                         break;
                     default:
@@ -442,7 +479,7 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
                         break;
                     case DataAccess.FILE:
                         fullStorageLocation = baseDriverId + DataAccess.SEPARATOR
-                                + System.getProperty("dataverse.files." + baseDriverId + ".directory") + "/"
+                                + System.getProperty("dataverse.files." + baseDriverId + ".directory", "/tmp/files") + "/"
                                 + fullStorageLocation;
                         break;
                     default:
@@ -461,7 +498,7 @@ public class RemoteOverlayAccessIO<T extends DvObject> extends StorageIO<T> {
         try {
           remoteStoreUrl = new URL(System.getProperty("dataverse.files." + this.driverId + ".remote-store-url"));
         } catch(MalformedURLException mfue) {
-            logger.warning("Unable to read remoteStoreUrl for driver: " + this.driverId);
+            logger.fine("Unable to read remoteStoreUrl for driver: " + this.driverId);
         }
     }
 

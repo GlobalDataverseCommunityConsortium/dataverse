@@ -278,7 +278,7 @@ public class Access extends AbstractApiBean {
     @Path("datafile/{fileId:.+}")
     @GET
     @Produces({"application/xml"})
-    public DownloadInstance datafile(@PathParam("fileId") String fileId, @QueryParam("gbrecs") boolean gbrecs, @QueryParam("key") String apiToken, @Context UriInfo uriInfo, @Context HttpHeaders headers, @Context HttpServletResponse response) /*throws NotFoundException, ServiceUnavailableException, PermissionDeniedException, AuthorizationRequiredException*/ {
+    public Response datafile(@PathParam("fileId") String fileId, @QueryParam("gbrecs") boolean gbrecs, @QueryParam("key") String apiToken, @Context UriInfo uriInfo, @Context HttpHeaders headers, @Context HttpServletResponse response) /*throws NotFoundException, ServiceUnavailableException, PermissionDeniedException, AuthorizationRequiredException*/ {
         
         // check first if there's a trailing slash, and chop it: 
         while (fileId.lastIndexOf('/') == fileId.length() - 1) {
@@ -333,7 +333,7 @@ public class Access extends AbstractApiBean {
             dInfo.addServiceAvailable(new OptionalAccessService("subset", "text/tab-separated-values", "variables=&lt;LIST&gt;", "Column-wise Subsetting"));
         }
         
-        if(systemConfig.isGlobusDownload() && systemConfig.getGlobusStoresList().contains(DataAccess.getStorgageDriverFromIdentifier(df.getStorageIdentifier()))) {
+        if(systemConfig.isGlobusDownload() && systemConfig.getGlobusStoresList().contains(DataAccess.getStorageDriverFromIdentifier(df.getStorageIdentifier()))) {
             dInfo.addServiceAvailable(new OptionalAccessService("GlobusTransfer", df.getContentType(), "format=GlobusTransfer", "Download via Globus"));
         }
         
@@ -428,7 +428,10 @@ public class Access extends AbstractApiBean {
         /* 
          * Provide some browser-friendly headers: (?)
          */
-        return downloadInstance;
+        if (headers.getRequestHeaders().containsKey("Range")) {
+            return Response.status(Response.Status.PARTIAL_CONTENT).entity(downloadInstance).build();
+        }
+        return Response.ok(downloadInstance).build();
     }
     
     
