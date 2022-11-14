@@ -70,6 +70,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
@@ -672,9 +673,9 @@ public class FileUtil implements java.io.Serializable  {
     // from MD5Checksum.java
     public static String calculateChecksum(String datafile, ChecksumType checksumType) {
 
-        FileInputStream fis = null;
+        InputStream fis = null;
         try {
-            fis = new FileInputStream(datafile);
+            fis = new BufferedInputStream(new FileInputStream(datafile));
         } catch (FileNotFoundException ex) {
             throw new RuntimeException(ex);
         }
@@ -686,28 +687,17 @@ public class FileUtil implements java.io.Serializable  {
     public static String calculateChecksum(InputStream in, ChecksumType checksumType) {
         MessageDigest md = null;
         try {
-            // Use "SHA-1" (toString) rather than "SHA1", for example.
             md = MessageDigest.getInstance(checksumType.toString());
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
-
-        byte[] dataBytes = new byte[1024];
-
-        int nread;
-        try {
-            while ((nread = in.read(dataBytes)) != -1) {
-                md.update(dataBytes, 0, nread);
-            }
+        try (DigestInputStream dis= new DigestInputStream(in, md)){
+            // Use "SHA-1" (toString) rather than "SHA1", for example.
+            while (dis.read() != -1);
+            md = dis.getMessageDigest();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
-        } finally {
-            try {
-                in.close();
-            } catch (Exception e) {
-            }
         }
-
         return checksumDigestToString(md.digest());
     }
     
