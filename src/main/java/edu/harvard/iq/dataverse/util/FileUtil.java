@@ -659,7 +659,7 @@ public class FileUtil implements java.io.Serializable  {
 
         InputStream fis = null;
         try {
-            fis = new BufferedInputStream(new FileInputStream(datafile));
+            fis = new BufferedInputStream(new FileInputStream(datafile), 1024*1024);
         } catch (FileNotFoundException ex) {
             throw new RuntimeException(ex);
         }
@@ -675,9 +675,10 @@ public class FileUtil implements java.io.Serializable  {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+        byte[] chunk = new byte[32 * 1024];
         try (DigestInputStream dis= new DigestInputStream(in, md)){
             // Use "SHA-1" (toString) rather than "SHA1", for example.
-            while (dis.read() != -1);
+            while (dis.read(chunk) != -1);
             md = dis.getMessageDigest();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
