@@ -355,7 +355,11 @@ public class DatasetFieldServiceBean implements java.io.Serializable {
                 siblingsDatasetFields = df.getParentDatasetFieldCompoundValue().getChildDatasetFields();
             }
             for (DatasetFieldValue dfv : df.getDatasetFieldValues()) {
-                registerExternalTerm(cvocEntry, dfv.getValue(), siblingsDatasetFields);
+                if (dfv.getValue() == null) {
+                    logger.warning("Found null value for field: " + dft.getName());
+                } else {
+                    registerExternalTerm(cvocEntry, dfv.getValue(), siblingsDatasetFields);
+                }
             }
         } else {
             if (df.getDatasetFieldType().isCompound()) {
@@ -461,7 +465,7 @@ public class DatasetFieldServiceBean implements java.io.Serializable {
         String retrievalUri = cvocEntry.getString("retrieval-uri");
         String termUriFieldName = cvocEntry.getString("term-uri-field");
         String prefix = cvocEntry.getString("prefix", null);
-        if(term.isBlank()) {
+        if(StringUtils.isBlank(term)) {
             logger.fine("Ignoring blank term");
             return;
         }
