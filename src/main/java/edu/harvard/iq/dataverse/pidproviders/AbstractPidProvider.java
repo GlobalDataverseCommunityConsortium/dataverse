@@ -323,14 +323,16 @@ public abstract class AbstractPidProvider implements PidProvider {
         if (!PidProvider.isValidGlobalId(protocol, authority, identifier)) {
             return null;
         }
-        if(isCaseInsensitive) {
-            identifier = identifier.toUpperCase();
-        }
-        // Check authority/identifier if this is a provider that manages specific
-        // identifiers
-        // /is not one of the unmanaged providers that has null authority
-        if (getAuthority() != null) {
 
+        /*
+         * Check authority/identifier if this is a provider that manages specific
+         * identifiers/is not one of the unmanaged providers that has null authority
+         */
+        if (getAuthority() != null) {
+            if(isCaseInsensitive) {
+                identifier = identifier.toUpperCase();
+            }
+            
             String cleanIdentifier = protocol + ":" + authority + getSeparator() + identifier;
             /*
              * Test if this provider manages this identifier - return null if it does not.
