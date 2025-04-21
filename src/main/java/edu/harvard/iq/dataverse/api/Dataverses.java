@@ -25,6 +25,9 @@ import edu.harvard.iq.dataverse.engine.command.DataverseRequest;
 import edu.harvard.iq.dataverse.engine.command.impl.*;
 import edu.harvard.iq.dataverse.pidproviders.PidProvider;
 import edu.harvard.iq.dataverse.pidproviders.PidUtil;
+import edu.harvard.iq.dataverse.pidproviders.doi.AbstractDOIProvider;
+import edu.harvard.iq.dataverse.pidproviders.handle.HandlePidProvider;
+import edu.harvard.iq.dataverse.pidproviders.perma.PermaLinkPidProvider;
 import edu.harvard.iq.dataverse.settings.JvmSettings;
 import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
 import edu.harvard.iq.dataverse.util.BundleUtil;
@@ -39,6 +42,8 @@ import edu.harvard.iq.dataverse.util.json.JsonPrinter;
 import edu.harvard.iq.dataverse.util.json.JsonUtil;
 
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -71,6 +76,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.StreamingOutput;
+
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
@@ -1133,6 +1144,7 @@ public class Dataverses extends AbstractApiBean {
         }
     }
 
+
     @POST
     @AuthRequired
     @Path("{identifier}/metadatablockfacets")
@@ -1909,6 +1921,115 @@ public class Dataverses extends AbstractApiBean {
             return ok(BundleUtil.getStringFromBundle("dataverse.delete.featuredItems.success"));
         } catch (WrappedResponse e) {
             return e.getResponse();
+        }
+    }
+    
+    @POST
+    @AuthRequired
+    @Path("migrateDataverseDataset")
+    public Response migrateDataverseDataset(@Context ContainerRequestContext crc, 
+                                            @QueryParam("pid") String pid,
+                                            @QueryParam("remoteApiKey") String remoteApiKey) {
+        try {
+            User u = getRequestUser(crc);
+            if (!u.isSuperuser()) {
+                return error(Status.FORBIDDEN, "Only superusers can perform dataset migration.");
+            }
+
+            if (StringUtil.isEmpty(pid) || StringUtil.isEmpty(remoteApiKey)) {
+                return error(Status.BAD_REQUEST, "Both 'pid' and 'remoteApiKey' parameters are required.");
+            }
+            GlobalId gid = PidUtil.parseAsGlobalID(pid);
+            if(!PidUtil.getPidProvider(gid.getProviderId()).canManagePID()) {
+                return badRequest("Specified PID cannot be managed in this repository.");
+            }
+            String resolvedUrl = findServer(gid, pid);
+            if (resolvedUrl == null) {
+                return error(Status.BAD_REQUEST, "Unable to resolve the provided identifier: " + pid);
+            }
+            String remoteApi = resolvedUrl + "/api/datasets/:persistentId/versions?excludeFiles=true&excludeMetadataBlocks=true&persistentId=" + gid.asString();
+            
+            // Create an HttpClient
+            try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                HttpGet httpGet = new HttpGet(remoteApi);
+                httpGet.setHeader("X-Dataverse-key", remoteApiKey);
+
+                try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                    int statusCode = response.getCode();
+                    if (statusCode != 200) {
+                        return error(Status.BAD_REQUEST, "Failed to fetch dataset versions. Status code: " + statusCode);
+                    }
+
+
+                    JsonObject jsonObject = JsonUtil.getJsonObject(response.getEntity().getContent());
+
+                    // Pretty print the JSON response to the log
+                    logger.info("Remote API Response:\n" + JsonUtil.prettyPrint(jsonObject));
+
+                    // Parse and log information about versions
+                    JsonArray versionsArray = jsonObject.getJsonArray("data");
+                    int versionCount = versionsArray.size();
+                    logger.info("Number of versions: " + versionCount);
+
+                    for (int i = 0; i < versionCount; i++) {
+                        JsonObject version = versionsArray.getJsonObject(i);
+                        String versionNumber = version.getString("versionNumber") + "." + version.getString("minorVersionNumber");
+                        String versionState = version.getString("versionState");
+                        logger.info("Version " + versionNumber + " - State: " + versionState);
+                    }
+
+                    // For now, we'll just return a placeholder response
+                    JsonObjectBuilder finalResponse = Json.createObjectBuilder()
+                            .add("status", "Migration initiated")
+                            .add("pid", pid)
+                            .add("versionCount", versionCount);
+
+                    return ok(finalResponse);
+                }
+            }
+        } catch (Exception ex) {
+            logger.log(Level.SEVERE, "Error occurred during dataset migration", ex);
+            return error(Status.INTERNAL_SERVER_ERROR, "An unexpected error occurred during migration: " + ex.getMessage());
+        }
+    }
+    
+    private String findServer(GlobalId gid, String pid) {
+        URL pidUrl = null;
+        String remoteServerUrl = null;
+        try {
+            String protocol = gid.getProtocol();
+            if (protocol.equals(AbstractDOIProvider.DOI_PROTOCOL) || protocol.equals(HandlePidProvider.HDL_PROTOCOL)) {
+                pidUrl = new URL(gid.asURL());
+            } else { // PermaLink
+                int index = pid.indexOf("/citation?persistentId=" + PermaLinkPidProvider.PERMA_PROTOCOL + ":");
+                if (index > 0) {
+                    remoteServerUrl = pid.substring(0, index);
+                }
+            }
+            HttpURLConnection conn = (HttpURLConnection) pidUrl.openConnection();
+            conn.setInstanceFollowRedirects(false);
+            
+            // We need to handle redirects manually for cross-protocol redirects
+            boolean redirect = false;
+            int status = conn.getResponseCode();
+            if (status != HttpURLConnection.HTTP_OK) {
+                if (status == HttpURLConnection.HTTP_MOVED_TEMP
+                    || status == HttpURLConnection.HTTP_MOVED_PERM
+                    || status == HttpURLConnection.HTTP_SEE_OTHER)
+                redirect = true;
+            }
+
+            if (redirect) {
+                String newUrl = conn.getHeaderField("Location");
+                int index = newUrl.indexOf("/dataset.xhtml");
+                if(index>0) {
+                    remoteServerUrl = newUrl.substring(0,index);
+                }
+            }
+            return remoteServerUrl;
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Error resolving identifier: " + pid, e);
+            return null;
         }
     }
 }
