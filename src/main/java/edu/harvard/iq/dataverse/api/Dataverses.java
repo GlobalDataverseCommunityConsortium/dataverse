@@ -1947,7 +1947,7 @@ public class Dataverses extends AbstractApiBean {
             if (resolvedUrl == null) {
                 return error(Status.BAD_REQUEST, "Unable to resolve the provided identifier: " + pid);
             }
-            String remoteApi = resolvedUrl + "/api/datasets/:persistentId/versions?excludeFiles=true&excludeMetadataBlocks=true&persistentId=" + gid.asString();
+            String remoteApi = resolvedUrl + "/api/datasets/:persistentId/versions?excludeFiles=true&excludeMetadataBlocks=false&persistentId=" + gid.asString();
             
             // Create an HttpClient
             try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
@@ -1973,7 +1973,10 @@ public class Dataverses extends AbstractApiBean {
 
                     for (int i = 0; i < versionCount; i++) {
                         JsonObject version = versionsArray.getJsonObject(i);
-                        String versionNumber = version.getString("versionNumber") + "." + version.getString("minorVersionNumber");
+                        String versionNumber = null;
+                        if(version.containsKey("versionNumber") && version.containsKey("minorVersionNumber" )){
+                         versionNumber = version.getString("versionNumber") + "." + version.getString("minorVersionNumber");
+                        }
                         String versionState = version.getString("versionState");
                         logger.info("Version " + versionNumber + " - State: " + versionState);
                     }
@@ -1996,6 +1999,10 @@ public class Dataverses extends AbstractApiBean {
     private String findServer(GlobalId gid, String pid) {
         URL pidUrl = null;
         String remoteServerUrl = null;
+        if(gid.getAuthority().equals("10.33564")) {
+            //Testing with QDR's test creds
+            return "https://data.stage.qdr.org";
+        }
         try {
             String protocol = gid.getProtocol();
             if (protocol.equals(AbstractDOIProvider.DOI_PROTOCOL) || protocol.equals(HandlePidProvider.HDL_PROTOCOL)) {
