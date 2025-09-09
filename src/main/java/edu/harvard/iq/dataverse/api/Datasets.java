@@ -60,6 +60,7 @@ import jakarta.ejb.EJBException;
 import jakarta.inject.Inject;
 import jakarta.json.*;
 import jakarta.json.stream.JsonParsingException;
+import jakarta.persistence.Query;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.*;
@@ -474,6 +475,44 @@ public class Datasets extends AbstractApiBean {
         }, getRequestUser(crc));
     }
 
+    @GET
+    @AuthRequired
+    @Path("{id}/existingVersions")
+    public Response listExistingVersions(@Context ContainerRequestContext crc, @PathParam("id") String id) {
+        return response(req -> {
+            Dataset dataset = findDatasetOrDie(id);
+            JsonArrayBuilder jab = Json.createArrayBuilder();
+            
+            // Create a direct query to only fetch the version information we need
+            Query query = em.createQuery(
+                "SELECT v.id, v.versionNumber, v.minorVersionNumber, v.versionState " +
+                "FROM DatasetVersion v " +
+                "WHERE v.dataset.id = :datasetId " +
+                "ORDER BY v.versionNumber DESC, v.minorVersionNumber DESC");
+            query.setParameter("datasetId", dataset.getId());
+            
+            List<Object[]> results = query.getResultList();
+            
+            // Build the JSON response with just the version information
+            for (Object[] result : results) {
+                Long versionId = (Long) result[0];
+                Long versionNumber = (Long) result[1];
+                Long minorVersionNumber = (Long) result[2];
+                DatasetVersion.VersionState versionState = (DatasetVersion.VersionState) result[3];
+                
+                JsonObjectBuilder versionObject = Json.createObjectBuilder()
+                    .add("id", versionId)
+                    .add("versionNumber", versionNumber)
+                    .add("minorVersionNumber", minorVersionNumber)
+                    .add("versionState", versionState.name());
+                
+                jab.add(versionObject);
+            }
+            
+            return ok(jab);
+        }, getRequestUser(crc));
+    }
+    
     @GET
     @AuthRequired
     @Path("{id}/versions/{versionId}")
