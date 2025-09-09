@@ -77,13 +77,12 @@ public class JSONLDUtil {
         return contextBuilder.build();
     }
 
-    public static Dataset updateDatasetMDFromJsonLD(Dataset ds, String jsonLDBody,
+    public static Dataset updateDatasetMDFromJsonLD(Dataset ds, JsonObject jsonld,
             MetadataBlockServiceBean metadataBlockSvc, DatasetFieldServiceBean datasetFieldSvc, boolean append,
             boolean migrating, LicenseServiceBean licenseSvc, DatasetTypeServiceBean datasetTypeSvc) {
 
         DatasetVersion dsv = new DatasetVersion();
 
-        JsonObject jsonld = decontextualizeJsonLD(jsonLDBody);
         if (migrating) {
             Optional<GlobalId> maybePid = PidProvider.parse(jsonld.getString("@id"));
             if (maybePid.isPresent()) {
