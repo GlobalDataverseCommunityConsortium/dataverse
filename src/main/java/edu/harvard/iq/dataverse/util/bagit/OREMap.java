@@ -83,6 +83,10 @@ public class OREMap {
     }
     
     public JsonObjectBuilder getOREMapBuilder(boolean aggregationOnly) {
+        return getOREMapBuilder(aggregationOnly, aggregationOnly);
+    }
+
+    public JsonObjectBuilder getOREMapBuilder(boolean aggregationOnly, boolean includeFiles) {
 
         //Set this flag if it wasn't provided
         if(excludeEmail==null) {
@@ -179,7 +183,7 @@ public class OREMap {
         // The aggregation aggregates aggregatedresources (Datafiles) which each have
         // their own entry and metadata
         JsonArrayBuilder aggResArrayBuilder = Json.createArrayBuilder();
-        if (!aggregationOnly) {
+        if (includeFiles) {
 
             for (FileMetadata fmd : version.getFileMetadatas()) {
                 DataFile df = fmd.getDataFile();
