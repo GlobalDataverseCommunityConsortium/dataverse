@@ -42,6 +42,7 @@ import edu.harvard.iq.dataverse.util.json.*;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -68,16 +69,15 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
 import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.StreamingOutput;
 
+import org.apache.hc.client5.http.HttpResponseException;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -96,7 +96,6 @@ import javax.xml.stream.XMLStreamException;
 public class Dataverses extends AbstractApiBean {
 
     private static final Logger logger = Logger.getLogger(Dataverses.class.getCanonicalName());
-    private static final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss");
 
     @EJB
     ExplicitGroupServiceBean explicitGroupSvc;
@@ -463,7 +462,8 @@ public class Dataverses extends AbstractApiBean {
             Dataset ds = new Dataset();
 
             ds.setOwner(owner);
-            ds = JSONLDUtil.updateDatasetMDFromJsonLD(ds, jsonLDBody, metadataBlockSvc, datasetFieldSvc, false, false, licenseSvc, datasetTypeSvc);
+            JsonObject jsonld = JSONLDUtil.decontextualizeJsonLD(jsonLDBody);
+            ds = JSONLDUtil.updateDatasetMDFromJsonLD(ds, jsonld, metadataBlockSvc, datasetFieldSvc, false, false, licenseSvc, datasetTypeSvc);
             
             ds.setOwner(owner);
 
@@ -664,28 +664,9 @@ public class Dataverses extends AbstractApiBean {
                 return error(Status.FORBIDDEN, "Not a superuser");
             }
             Dataverse owner = findDataverseOrDie(parentIdtf);
+            JsonObject jsonld = JSONLDUtil.decontextualizeJsonLD(jsonLDBody);
+            Dataset ds = getValidDatasetForImport(jsonld, owner);
             
-            Dataset ds = new Dataset();
-
-            ds.setOwner(owner);
-            ds = JSONLDUtil.updateDatasetMDFromJsonLD(ds, jsonLDBody, metadataBlockSvc, datasetFieldSvc, false, true, licenseSvc, datasetTypeSvc);
-          //ToDo - verify PID is one Dataverse can manage (protocol/authority/shoulder match)
-          if (!PidUtil.getPidProvider(ds.getGlobalId().getProviderId()).canManagePID()) {
-              throw new BadRequestException(
-                      "Cannot recreate a dataset that has a PID that doesn't match the server's settings");
-          }
-            if(!dvObjectSvc.isGlobalIdLocallyUnique(ds.getGlobalId())) {
-                throw new BadRequestException("Cannot recreate a dataset whose PID is already in use");
-            }
-            
-            //Throw BadRequestException if metadataLanguage isn't compatible with setting
-            DataverseUtil.checkMetadataLangauge(ds, owner, settingsService.getBaseMetadataLanguageMap(null, true));
-
-
-            if (ds.getVersions().isEmpty()) {
-                return badRequest("Supplied json must contain a single dataset version.");
-            }
-
             DatasetVersion version = ds.getVersions().get(0);
             if (!version.isPublished()) {
                 throw new BadRequestException("Cannot recreate a dataset that hasn't been published.");
@@ -707,6 +688,30 @@ public class Dataverses extends AbstractApiBean {
         }
     }
     
+    private Dataset getValidDatasetForImport(JsonObject jsonld, Dataverse owner) throws BadRequestException  {
+        Dataset ds = new Dataset();
+
+        ds.setOwner(owner);
+        ds = JSONLDUtil.updateDatasetMDFromJsonLD(ds, jsonld, metadataBlockSvc, datasetFieldSvc, false, true,
+                licenseSvc, datasetTypeSvc);
+
+        if (!PidUtil.getPidProvider(ds.getGlobalId().getProviderId()).canManagePID()) {
+            throw new BadRequestException(
+                    "Cannot recreate a dataset that has a PID that doesn't match the server's settings");
+        }
+        if (!dvObjectSvc.isGlobalIdLocallyUnique(ds.getGlobalId())) {
+            throw new BadRequestException("Cannot recreate a dataset whose PID is already in use");
+        }
+
+        // Throw BadRequestException if metadataLanguage isn't compatible with setting
+        DataverseUtil.checkMetadataLangauge(ds, owner, settingsService.getBaseMetadataLanguageMap(null, true));
+
+        if (ds.getVersions().isEmpty()) {
+            throw new BadRequestException("Supplied json must contain a single dataset version.");
+        }
+        return ds;
+    }
+
     private Dataset parseDataset(String datasetJson) throws WrappedResponse {
         try {
             return jsonParser().parseDataset(JsonUtil.getJsonObject(datasetJson));
@@ -1984,73 +1989,157 @@ public class Dataverses extends AbstractApiBean {
     
     @POST
     @AuthRequired
-    @Path("migrateDataverseDataset")
-    public Response migrateDataverseDataset(@Context ContainerRequestContext crc, 
-                                            @QueryParam("pid") String pid,
-                                            @QueryParam("remoteApiKey") String remoteApiKey) {
+    @Path("{identifier}/migrateDataverseDataset")
+    public Response migrateDataverseDataset(@Context ContainerRequestContext crc, @PathParam("identifier") String dvId,
+            @QueryParam("pid") String pid, @QueryParam("remoteApiKey") String remoteApiKey) {
+
+        User u = getRequestUser(crc);
+        if (!u.isSuperuser()) {
+            return error(Status.FORBIDDEN, "Only superusers can perform dataset migration.");
+        }
+
+        Dataverse owner;
         try {
-            User u = getRequestUser(crc);
-            if (!u.isSuperuser()) {
-                return error(Status.FORBIDDEN, "Only superusers can perform dataset migration.");
-            }
+            owner = findDataverseOrDie(dvId);
+        } catch (WrappedResponse e) {
+            return e.getResponse();
+        }
 
-            if (StringUtil.isEmpty(pid) || StringUtil.isEmpty(remoteApiKey)) {
-                return error(Status.BAD_REQUEST, "Both 'pid' and 'remoteApiKey' parameters are required.");
-            }
-            GlobalId gid = PidUtil.parseAsGlobalID(pid);
-            if(!PidUtil.getPidProvider(gid.getProviderId()).canManagePID()) {
-                return badRequest("Specified PID cannot be managed in this repository.");
-            }
-            String resolvedUrl = findServer(gid, pid);
-            if (resolvedUrl == null) {
-                return error(Status.BAD_REQUEST, "Unable to resolve the provided identifier: " + pid);
-            }
-            String remoteApi = resolvedUrl + "/api/datasets/:persistentId/versions?excludeFiles=true&excludeMetadataBlocks=false&persistentId=" + gid.asString();
-            
-            // Create an HttpClient
-            try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-                HttpGet httpGet = new HttpGet(remoteApi);
-                httpGet.setHeader("X-Dataverse-key", remoteApiKey);
+        if (StringUtil.isEmpty(pid) || StringUtil.isEmpty(remoteApiKey)) {
+            return error(Status.BAD_REQUEST, "Both 'pid' and 'remoteApiKey' parameters are required.");
+        }
+        GlobalId gid = PidUtil.parseAsGlobalID(pid);
+        if (!PidUtil.getPidProvider(gid.getProviderId()).canManagePID()) {
+            return badRequest("Specified PID cannot be managed in this repository.");
+        }
+        String resolvedUrl = findServer(gid, pid);
+        if (resolvedUrl == null) {
+            return error(Status.BAD_REQUEST, "Unable to resolve the provided identifier: " + pid);
+        }
+        String remoteApi = resolvedUrl
+                + "/api/datasets/:persistentId/versions?excludeFiles=true&excludeMetadataBlocks=true&persistentId="
+                + gid.asString();
+        /*
+         * ToDo - user newer call String remoteApi = resolvedUrl +
+         * "/api/datasets/:persistentId/existingVersions?persistentId=" +
+         * gid.asString();
+         */
 
-                try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                    int statusCode = response.getCode();
-                    if (statusCode != 200) {
-                        return error(Status.BAD_REQUEST, "Failed to fetch dataset versions. Status code: " + statusCode);
-                    }
+        // Use HttpClient5 (Apache HttpClient 5.x)
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            // Create the HTTP request
+            HttpGet httpGet = new HttpGet(remoteApi);
+            httpGet.setHeader("X-Dataverse-key", remoteApiKey);
+            httpGet.setHeader("Accept", "application/json");
 
+            // Execute the request using HttpClientResponseHandler
 
-                    JsonObject jsonObject = JsonUtil.getJsonObject(response.getEntity().getContent());
-
-                    // Pretty print the JSON response to the log
-                    logger.info("Remote API Response:\n" + JsonUtil.prettyPrint(jsonObject));
-
-                    // Parse and log information about versions
-                    JsonArray versionsArray = jsonObject.getJsonArray("data");
-                    int versionCount = versionsArray.size();
-                    logger.info("Number of versions: " + versionCount);
-
-                    for (int i = 0; i < versionCount; i++) {
-                        JsonObject version = versionsArray.getJsonObject(i);
-                        String versionNumber = null;
-                        if(version.containsKey("versionNumber") && version.containsKey("minorVersionNumber" )){
-                         versionNumber = version.getString("versionNumber") + "." + version.getString("minorVersionNumber");
-                        }
-                        String versionState = version.getString("versionState");
-                        logger.info("Version " + versionNumber + " - State: " + versionState);
-                    }
-
-                    // For now, we'll just return a placeholder response
-                    JsonObjectBuilder finalResponse = Json.createObjectBuilder()
-                            .add("status", "Migration initiated")
-                            .add("pid", pid)
-                            .add("versionCount", versionCount);
-
-                    return ok(finalResponse);
+            String responseData = httpClient.execute(httpGet, response -> {
+                int statusCode = response.getCode();
+                if (statusCode != 200) {
+                    String errorData = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                    logger.log(Level.WARNING, "Failed API call: {0}, Status: {1}, Response: {2}",
+                            new Object[] { "Get Dataset Versions", statusCode, errorData });
+                    throw new HttpResponseException(statusCode,
+                            "Failed to fetch dataset versions. Status code: " + statusCode);
                 }
+
+                // Parse the response using EntityUtils
+                return EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+            });
+
+            // Process the successful response
+            JsonObject jsonObject = JsonUtil.getJsonObject(responseData);
+
+            // Pretty print the JSON response to the log
+            logger.info("Remote API Response:\n" + JsonUtil.prettyPrint(jsonObject));
+
+            // Parse and log information about versions
+            JsonArray versionsArray = jsonObject.getJsonArray("data");
+            int versionCount = versionsArray.size();
+            logger.info("Number of versions: " + versionCount);
+
+            for (int i = 0; i < versionCount; i++) {
+                JsonObject versionObj = versionsArray.getJsonObject(i);
+                String versionNumber = null;
+                if (versionObj.containsKey("versionNumber") && versionObj.containsKey("versionMinorNumber")) {
+                    int majorVersion = versionObj.getInt("versionNumber");
+                    int minorVersion = versionObj.getInt("versionMinorNumber");
+                    versionNumber = majorVersion + "." + minorVersion;
+                }
+                String versionState = versionObj.getString("versionState");
+                logger.info("Version " + versionNumber + " - State: " + versionState);
+
+                // Call the metadata endpoint for each version and collect the metadata
+                String versionToGet = versionNumber == null ? ":draft" : versionNumber;
+                String metadataUrl = resolvedUrl + "/api/datasets/:persistentId/versions/" + versionToGet
+                        + "/metadata?persistentId=" + gid.asString();
+                logger.info("Fetching metadata from: " + metadataUrl);
+
+                try {
+                    HttpGet metadataRequest = new HttpGet(metadataUrl);
+                    metadataRequest.setHeader("X-Dataverse-key", remoteApiKey);
+                    metadataRequest.setHeader("Accept", "application/ld+json");
+
+                    String metadataResponse = httpClient.execute(metadataRequest, response -> {
+                        int statusCode = response.getCode();
+                        if (statusCode != 200) {
+                            String errorData = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                            logger.warning("Failed to fetch metadata for version " + versionToGet + ". Status: "
+                                    + statusCode + ", Response: " + errorData);
+                            return null;
+                        }
+                        return EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                    });
+
+                    if (metadataResponse != null) {
+                        String metadataJsonLd = JsonUtil
+                                .prettyPrint(JsonUtil.getJsonObject(metadataResponse).getJsonObject("data"));
+                        logger.info("Metadata for version " + versionToGet + ":\n" + metadataJsonLd);
+
+                        if (versionCount == 1) {
+                            // Create new dataset - only handling single version case to start
+                            JsonObject jsonld = JSONLDUtil.decontextualizeJsonLD(metadataJsonLd);
+                            Dataset ds = getValidDatasetForImport(jsonld, owner);
+                            DatasetVersion version = ds.getLatestVersion();
+                            boolean isPublished = version.isReleased();
+                            // While the datasetversion whose metadata we're importing has been published,
+                            // we consider it in draft until the API caller adds files and then completes
+                            // the migration
+                            version.setVersionState(DatasetVersion.VersionState.DRAFT);
+
+                            DataverseRequest request = createDataverseRequest(u);
+
+                            Dataset managedDs = execCommand(new ImportDatasetCommand(ds, request));
+                            JsonObjectBuilder responseBld = Json.createObjectBuilder().add("id", managedDs.getId())
+                                    .add("persistentId", managedDs.getGlobalId().toString());
+                            logger.info("Created draft: " + JsonUtil.prettyPrint(responseBld.build()));
+                            JsonArray files = jsonld.getOrDefault(JsonLDTerm.ore("aggregates").getUrl(),
+                                    Json.createArrayBuilder().build()).asJsonArray();
+                            for (JsonObject file : files.getValuesAs(JsonObject.class)) {
+                                logger.info("Found file: " + file.getString(JsonLDTerm.schemaOrg("name").getUrl()));
+                                logger.info("Available at: " + file.getString(JsonLDTerm.schemaOrg("sameas").getUrl()));
+                            }
+                        }
+                    }
+                } catch (WrappedResponse ex) {
+                    return ex.getResponse();
+                } catch (Exception e) {
+                    logger.log(Level.WARNING, "Error fetching metadata for version " + versionToGet, e);
+                }
+
             }
-        } catch (Exception ex) {
-            logger.log(Level.SEVERE, "Error occurred during dataset migration", ex);
-            return error(Status.INTERNAL_SERVER_ERROR, "An unexpected error occurred during migration: " + ex.getMessage());
+
+            // For now, we'll just return a placeholder response
+            JsonObjectBuilder finalResponse = Json.createObjectBuilder().add("status", "Migration initiated")
+                    .add("pid", pid).add("versionCount", versionCount);
+
+            return ok(finalResponse);
+        } catch (HttpResponseException ex) {
+            return error(Status.BAD_REQUEST, ex.getMessage());
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, "IO error occurred during dataset migration", ex);
+            return error(Status.INTERNAL_SERVER_ERROR, "IO error during migration: " + ex.getMessage());
         }
     }
     
