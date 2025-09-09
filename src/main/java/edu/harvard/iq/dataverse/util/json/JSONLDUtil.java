@@ -470,8 +470,22 @@ public class JSONLDUtil {
             }
             List<DatasetFieldValue> vals = dsf.getDatasetFieldValues();
 
-            for (JsonString strVal : valArray.getValuesAs(JsonString.class)) {
-                String strValue = strVal.getString();
+            for (JsonValue jVal : valArray) {
+                String strValue = null;
+                switch (jVal.getValueType()) {
+                  case STRING:
+                    strValue = ((JsonString) jVal).getString();
+                    break;
+                  case OBJECT:
+                    if (((JsonObject) jVal).containsKey("@id")) {
+                        strValue = ((JsonObject) jVal).getString("@id");
+                    }
+                    break;
+                  default:
+                }
+                if(strValue==null) {
+                    throw new BadRequestException("Unable to parse value submitted for " + dsft.getName() + ", expected a string or object with an \"@id\" key.");
+                }
                 if(extVocab) {
                     if(!datasetFieldSvc.isValidCVocValue(dsft, strValue)) {
                         throw new BadRequestException("Invalid values submitted for " + dsft.getName() + " which is limited to specific vocabularies.");
