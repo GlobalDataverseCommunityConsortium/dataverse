@@ -3,6 +3,7 @@ package edu.harvard.iq.dataverse.api;
 import com.google.common.collect.Lists;
 import com.google.api.client.util.ArrayMap;
 import edu.harvard.iq.dataverse.*;
+import edu.harvard.iq.dataverse.api.AbstractApiBean.WrappedResponse;
 import edu.harvard.iq.dataverse.api.auth.AuthRequired;
 import edu.harvard.iq.dataverse.api.datadeposit.SwordServiceBean;
 import edu.harvard.iq.dataverse.api.dto.*;
@@ -17,6 +18,7 @@ import edu.harvard.iq.dataverse.authorization.groups.impl.explicit.ExplicitGroup
 import edu.harvard.iq.dataverse.authorization.groups.impl.explicit.ExplicitGroupServiceBean;
 import edu.harvard.iq.dataverse.authorization.users.AuthenticatedUser;
 import edu.harvard.iq.dataverse.authorization.users.User;
+import edu.harvard.iq.dataverse.dataaccess.S3AccessIO;
 import edu.harvard.iq.dataverse.dataset.DatasetType;
 import edu.harvard.iq.dataverse.dataverse.DataverseUtil;
 import edu.harvard.iq.dataverse.dataverse.featured.DataverseFeaturedItem;
@@ -30,10 +32,13 @@ import edu.harvard.iq.dataverse.pidproviders.handle.HandlePidProvider;
 import edu.harvard.iq.dataverse.pidproviders.perma.PermaLinkPidProvider;
 import edu.harvard.iq.dataverse.settings.JvmSettings;
 import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
+import edu.harvard.iq.dataverse.storageuse.UploadSessionQuotaLimit;
 import edu.harvard.iq.dataverse.util.BundleUtil;
 import edu.harvard.iq.dataverse.util.ConstraintViolationUtil;
 import edu.harvard.iq.dataverse.util.FileUtil;
 import edu.harvard.iq.dataverse.util.StringUtil;
+import edu.harvard.iq.dataverse.util.VersionUtil;
+
 import static edu.harvard.iq.dataverse.util.StringUtil.nonEmpty;
 import static edu.harvard.iq.dataverse.util.json.JsonPrinter.*;
 
@@ -75,10 +80,15 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.StreamingOutput;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.HttpResponseException;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -1998,6 +2008,19 @@ public class Dataverses extends AbstractApiBean {
             return error(Status.FORBIDDEN, "Only superusers can perform dataset migration.");
         }
 
+        
+        /*ToDo - create an endpoint to check if migration is possible
+         * It would do things like check the remote Dataverse's server version,
+         * Check for used metadata fields (are they in local blocks?)
+         * Is the license allowed
+         * Are all files small enough to upload w.r.t. systemConfig.getMaxFileUploadSizeForStore(dataset.getEffectiveStorageDriverId());
+         * provenance used? allowed?
+         * and temporarily:
+         * only 1 version?
+         * direct file upload allowed?
+         * etc. 
+         */
+        
         Dataverse owner;
         try {
             owner = findDataverseOrDie(dvId);
@@ -2013,9 +2036,34 @@ public class Dataverses extends AbstractApiBean {
             return badRequest("Specified PID cannot be managed in this repository.");
         }
         String resolvedUrl = findServer(gid, pid);
+
         if (resolvedUrl == null) {
             return error(Status.BAD_REQUEST, "Unable to resolve the provided identifier: " + pid);
         }
+        
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpGet httpGet = new HttpGet(resolvedUrl + "/api/info/version");
+            httpGet.setHeader("Accept", "application/json");
+
+            // Execute the request using HttpClientResponseHandler
+
+            String serverVersion = httpClient.execute(httpGet, response -> {
+                int statusCode = response.getCode();
+                if (statusCode != 200) {
+                    String errorData = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                    logger.log(Level.WARNING, "Failed API call: {0}, Status: {1}, Response: {2}",
+                            new Object[] { "Get Dataset Versions", statusCode, errorData });
+                    throw new HttpResponseException(statusCode,
+                            "Failed to get Dataverse version from " + resolvedUrl + ", status code: " + statusCode);
+                }
+
+                // Parse the response using EntityUtils
+                return JsonUtil.getJsonObject(EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8)).getJsonObject("data").getString("version");
+            });
+
+            logger.info("Server version: " + serverVersion);
+            
+            
         String remoteApi = resolvedUrl
                 + "/api/datasets/:persistentId/versions?excludeFiles=true&excludeMetadataBlocks=true&persistentId="
                 + gid.asString();
@@ -2025,10 +2073,8 @@ public class Dataverses extends AbstractApiBean {
          * gid.asString();
          */
 
-        // Use HttpClient5 (Apache HttpClient 5.x)
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            // Create the HTTP request
-            HttpGet httpGet = new HttpGet(remoteApi);
+        
+            httpGet = new HttpGet(remoteApi);
             httpGet.setHeader("X-Dataverse-key", remoteApiKey);
             httpGet.setHeader("Accept", "application/json");
 
@@ -2041,7 +2087,7 @@ public class Dataverses extends AbstractApiBean {
                     logger.log(Level.WARNING, "Failed API call: {0}, Status: {1}, Response: {2}",
                             new Object[] { "Get Dataset Versions", statusCode, errorData });
                     throw new HttpResponseException(statusCode,
-                            "Failed to fetch dataset versions. Status code: " + statusCode);
+                            "Failed to fetch dataset versions from remote server. Status code: " + statusCode);
                 }
 
                 // Parse the response using EntityUtils
@@ -2073,7 +2119,7 @@ public class Dataverses extends AbstractApiBean {
                 // Call the metadata endpoint for each version and collect the metadata
                 String versionToGet = versionNumber == null ? ":draft" : versionNumber;
                 String metadataUrl = resolvedUrl + "/api/datasets/:persistentId/versions/" + versionToGet
-                        + "/metadata?persistentId=" + gid.asString();
+                        + "/metadata?includeFiles=true&persistentId=" + gid.asString();
                 logger.info("Fetching metadata from: " + metadataUrl);
 
                 try {
@@ -2085,7 +2131,7 @@ public class Dataverses extends AbstractApiBean {
                         int statusCode = response.getCode();
                         if (statusCode != 200) {
                             String errorData = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-                            logger.warning("Failed to fetch metadata for version " + versionToGet + ". Status: "
+                            logger.warning("Failed to fetch metadata from remote server for version " + versionToGet + ". Status: "
                                     + statusCode + ", Response: " + errorData);
                             return null;
                         }
@@ -2114,11 +2160,271 @@ public class Dataverses extends AbstractApiBean {
                             JsonObjectBuilder responseBld = Json.createObjectBuilder().add("id", managedDs.getId())
                                     .add("persistentId", managedDs.getGlobalId().toString());
                             logger.info("Created draft: " + JsonUtil.prettyPrint(responseBld.build()));
+                            if(VersionUtil.isVersionEqualOrGreater(serverVersion, "6.9.0")) {
                             JsonArray files = jsonld.getOrDefault(JsonLDTerm.ore("aggregates").getUrl(),
                                     Json.createArrayBuilder().build()).asJsonArray();
                             for (JsonObject file : files.getValuesAs(JsonObject.class)) {
                                 logger.info("Found file: " + file.getString(JsonLDTerm.schemaOrg("name").getUrl()));
                                 logger.info("Available at: " + file.getString(JsonLDTerm.schemaOrg("sameas").getUrl()));
+                            } }
+                            else {
+                                String filesUrl = resolvedUrl + "/api/datasets/:persistentId/versions/1.0"
+                                        + "/files?persistentId=" + gid.asString();
+                                
+                                HttpGet fileRequest = new HttpGet(filesUrl);
+                                fileRequest.setHeader("X-Dataverse-key", remoteApiKey);
+                                fileRequest.setHeader("Accept", "application/ld+json");
+
+                                String filesResponse = httpClient.execute(fileRequest, response -> {
+                                    int statusCode = response.getCode();
+                                    if (statusCode != 200) {
+                                        String errorData = EntityUtils.toString(response.getEntity(),
+                                                StandardCharsets.UTF_8);
+                                        logger.warning("Failed to fetch metadata from remote server for version "
+                                                + versionToGet + ". Status: " + statusCode + ", Response: "
+                                                + errorData);
+                                        return null;
+                                    }
+                                    return EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                                });
+
+                                if (filesResponse != null) {
+                                    String filesJson = JsonUtil.prettyPrint(
+                                            JsonUtil.getJsonObject(filesResponse).getJsonArray("data"));
+                                    logger.info("Files for version " + versionToGet + ":\n" + filesJson);
+                                    JsonArrayBuilder filesBuilder = Json.createArrayBuilder();
+                                    for(JsonValue val : JsonUtil.getJsonObject(filesResponse).getJsonArray("data")) {
+                                        JsonObjectBuilder fileBld = Json.createObjectBuilder();
+                                        JsonObject fmdObj = val.asJsonObject();
+                                        JsonObject fileObj = fmdObj.getJsonObject("dataFile");
+                                        fileBld.add("id", fileObj.getInt("id"));
+                                        if(fileObj.containsKey("originalFileName")) {
+                                            fileBld.add("fileName", fileObj.getString("originalFileName"));
+                                            fileBld.add("mimeType", fileObj.getString("originalFileFormat"));
+                                            fileBld.add("size", fileObj.getInt("originalFileSize"));
+                                        } else {
+                                            fileBld.add("fileName", fileObj.getString("fileName"));
+                                            fileBld.add("mimeType", fileObj.getString("contentType"));
+                                            fileBld.add("size", fileObj.getInt("filesize"));
+                                        }
+                                        if (fileObj.containsKey("checksum")) {
+                                            fileBld.add("checksum", fileObj.getJsonObject("checksum"));
+                                        } else if (fileObj.containsKey("md5")) {
+                                            fileBld.add("md5", fileObj.getString("md5"));
+                                        }
+                                        if (fileObj.containsKey("persistentId")) {
+                                            String filePid = fileObj.getString("persistentId");
+                                            if (StringUtils.isNotBlank(filePid)) {
+                                                fileBld.add("persistentId", fileObj.getString("persistentId"));
+                                            }
+                                        }
+                                        fileBld.add("creationDate", fmdObj.getString("creationDate"));
+                                        if (fileObj.containsKey("publicationDate")) {
+                                            fileBld.add("publicationDate", fmdObj.getString("publicationDate"));
+                                        }
+                                        if (fileObj.containsKey("description")) {
+                                            fileBld.add("description", fileObj.get("description"));
+                                        }
+                                        if (fileObj.containsKey("directoryLabel")) {
+                                            fileBld.add("directoryLabel", fileObj.get("directoryLabel"));
+                                        }
+                                        if (fileObj.containsKey("restricted")) {
+                                            fileBld.add("restricted", fileObj.get("restricted"));
+                                        }
+                                        filesBuilder.add(fileBld.build());
+                                    }
+                                    JsonArray filesArray = filesBuilder.build();
+                                    
+                                    // Process each file for direct upload
+                                    for (JsonValue fileValue : filesArray) {
+                                        JsonObject fileObj = fileValue.asJsonObject();
+                                        String fileName = fileObj.getString("fileName");
+                                        String mimeType = fileObj.getString("mimeType");
+                                        String fileId = String.valueOf(fileObj.getInt("id"));
+                                        Long fileSize = fileObj.getJsonNumber("size").longValueExact();
+                                        
+                                        logger.info("Processing file for direct upload: " + fileName + " (ID: " + fileId + ")");
+                                        
+                                        // Step 1: Request direct upload URLs for this file
+                                        S3AccessIO<DataFile> s3io = FileUtil.getS3AccessForDirectUpload(managedDs);
+                                        if (s3io == null) {
+                                            return error(Response.Status.NOT_FOUND,
+                                                    "Direct upload not supported for files in this dataset: " + managedDs.getId());
+                                        }
+                                        
+                                        JsonObjectBuilder uploadUrlResponse = null;
+                                        String storageIdentifier = null;
+                                        try {
+                                            storageIdentifier = FileUtil.getStorageIdentifierFromLocation(s3io.getStorageLocation());
+                                            uploadUrlResponse = s3io.generateTemporaryS3UploadUrls(managedDs.getGlobalId().asString(), storageIdentifier, fileSize);
+
+                                        } catch (IOException io) {
+                                            logger.warning(io.getMessage());
+                                            throw new WrappedResponse(io,
+                                                    error(Response.Status.INTERNAL_SERVER_ERROR, "Could not create process direct upload request"));
+                                        }
+
+                                        uploadUrlResponse.add("storageIdentifier", storageIdentifier);
+                                        JsonObject uploadUrls = uploadUrlResponse.build();
+                                        
+                                            
+                                            // Step 2: Download the file from source
+                                            String fileDownloadUrl = resolvedUrl + "/api/access/datafile/" + fileObj.getInt("id");
+                                            HttpGet fileDownloadRequest = new HttpGet(fileDownloadUrl);
+                                            fileDownloadRequest.setHeader("X-Dataverse-key", remoteApiKey);
+                                            
+                                            // Execute file download and upload to our storage
+                                            try (CloseableHttpResponse downloadResponse = httpClient.execute(fileDownloadRequest)) {
+                                                if (downloadResponse.getCode() == 200) {
+                                                    // Check if this is a single-part or multi-part upload
+                                                    if (uploadUrls.containsKey("url")) {
+                                                        // Single part upload
+                                                        String uploadUrl = uploadUrls.getString("url");
+                                                        HttpPut uploadRequest = new HttpPut(uploadUrl);
+                                                        uploadRequest.setEntity(downloadResponse.getEntity());
+                                                        
+                                                        try (CloseableHttpResponse uploadResponse = httpClient.execute(uploadRequest)) {
+                                                            if (uploadResponse.getCode() != 200) {
+                                                                logger.warning("Failed to upload file " + fileName + 
+                                                                    ". Status: " + uploadResponse.getCode());
+                                                            } else {
+                                                                logger.info("Successfully uploaded file: " + fileName);
+                                                            }
+                                                        }
+                                                    } else if (uploadUrls.containsKey("urls")) {
+                                                        // Multi-part upload
+                                                        JsonObject partUrls = uploadUrls.getJsonObject("urls");
+                                                        String completeUrl = uploadUrls.getString("complete");
+                                                        String abortUrl = uploadUrls.getString("abort");
+                                                        int partSize = uploadUrls.getInt("partSize");
+                                                        
+                                                        // Stream the file instead of loading it all into memory
+                                                        InputStream inputStream = downloadResponse.getEntity().getContent();
+                                                        Map<String, String> etags = new HashMap<>();
+                                                        byte[] buffer = new byte[partSize];
+                                                        
+                                                        try {
+                                                            // Process each part
+                                                            for (String partKey : partUrls.keySet()) {
+                                                                int partNum = Integer.parseInt(partKey);
+                                                                String partUrl = partUrls.getString(partKey);
+                                                                
+                                                                // Read exactly one part's worth of data
+                                                                int bytesRead = 0;
+                                                                int totalBytesRead = 0;
+                                                                ByteArrayOutputStream partContent = new ByteArrayOutputStream(partSize);
+                                                                
+                                                                while (totalBytesRead < partSize) {
+                                                                    bytesRead = inputStream.read(buffer, 0, Math.min(buffer.length, partSize - totalBytesRead));
+                                                                    if (bytesRead == -1) {
+                                                                        break; // End of stream
+                                                                    }
+                                                                    partContent.write(buffer, 0, bytesRead);
+                                                                    totalBytesRead += bytesRead;
+                                                                }
+                                                                
+                                                                // If we didn't read anything, we're done
+                                                                if (totalBytesRead == 0 && partNum > 1) {
+                                                                    break;
+                                                                }
+                                                                
+                                                                // Upload this part
+                                                                HttpPut partUploadRequest = new HttpPut(partUrl);
+                                                                partUploadRequest.setEntity(new ByteArrayEntity(partContent.toByteArray()));
+                                                                
+                                                                try (CloseableHttpResponse partResponse = httpClient.execute(partUploadRequest)) {
+                                                                    if (partResponse.getCode() == 200) {
+                                                                        String etag = partResponse.getHeader("ETag").getValue().replace("\"", "");
+                                                                        etags.put(partKey, etag);
+                                                                        logger.info("Uploaded part " + partNum + " for file " + fileName + 
+                                                                            " (" + totalBytesRead + " bytes)");
+                                                                    } else {
+                                                                        logger.warning("Failed to upload part " + partNum + " for file " + fileName + 
+                                                                            ". Status: " + partResponse.getCode());
+                                                                        // Abort the multipart upload
+                                                                        HttpDelete abortRequest = new HttpDelete(abortUrl);
+                                                                        httpClient.execute(abortRequest);
+                                                                        return; // Exit the file processing
+                                                                    }
+                                                                }
+                                                                
+                                                                // Clear the buffer for the next part
+                                                                partContent.reset();
+                                                            }
+                                                        } finally {
+                                                            // Make sure to close the input stream
+                                                            IOUtils.closeQuietly(inputStream);
+                                                        }
+                                                        
+                                                        // Complete the multipart upload if we have ETags
+                                                        if (!etags.isEmpty()) {
+                                                            JsonObjectBuilder etagsBuilder = Json.createObjectBuilder();
+                                                            for (Map.Entry<String, String> entry : etags.entrySet()) {
+                                                                etagsBuilder.add(entry.getKey(), entry.getValue());
+                                                            }
+                                                            
+                                                            HttpPut completeRequest = new HttpPut(completeUrl);
+                                                            completeRequest.setEntity(new StringEntity(
+                                                                etagsBuilder.build().toString(), ContentType.APPLICATION_JSON));
+                                                            
+                                                            try (CloseableHttpResponse completeResponse = httpClient.execute(completeRequest)) {
+                                                                if (completeResponse.getCode() == 200) {
+                                                                    logger.info("Successfully completed multipart upload for file: " + fileName);
+                                                                } else {
+                                                                    logger.warning("Failed to complete multipart upload for file " + fileName + 
+                                                                        ". Status: " + completeResponse.getCode());
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    // Step 3: Register the uploaded file with the dataset
+                                                    String registerUrl = resolvedUrl + "/api/datasets/" + managedDs.getId() + "/addFiles";
+                                                    HttpPost registerRequest = new HttpPost(registerUrl);
+                                                    registerRequest.setHeader("X-Dataverse-key", apiKey);
+                                                    
+                                                    JsonObjectBuilder fileMetadata = Json.createObjectBuilder()
+                                                        .add("fileName", fileName)
+                                                        .add("mimeType", mimeType)
+                                                        .add("storageIdentifier", uploadUrls.getString("storageIdentifier"));
+                                                    
+                                                    if (fileObj.containsKey("description")) {
+                                                        fileMetadata.add("description", fileObj.get("description"));
+                                                    }
+                                                    if (fileObj.containsKey("directoryLabel")) {
+                                                        fileMetadata.add("directoryLabel", fileObj.get("directoryLabel"));
+                                                    }
+                                                    
+                                                    JsonArrayBuilder filesArrayBuilder = Json.createArrayBuilder().add(fileMetadata);
+                                                    JsonObjectBuilder jsonData = Json.createObjectBuilder().add("files", filesArrayBuilder);
+                                                    
+                                                    registerRequest.setEntity(new StringEntity(
+                                                        jsonData.build().toString(), ContentType.APPLICATION_JSON));
+                                                    
+                                                    try (CloseableHttpResponse registerResponse = httpClient.execute(registerRequest)) {
+                                                        if (registerResponse.getCode() == 200) {
+                                                            logger.info("Successfully registered file: " + fileName);
+                                                        } else {
+                                                            logger.warning("Failed to register file " + fileName + 
+                                                                ". Status: " + registerResponse.getCode());
+                                                        }
+                                                    }
+                                                } else {
+                                                    logger.warning("Failed to download file " + fileName + 
+                                                        ". Status: " + downloadResponse.getCode());
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // After all files are processed, you might want to publish the dataset if needed
+                                    if (isPublished) {
+                                        // Code to publish the dataset
+                                        logger.info("Publishing migrated dataset: " + managedDs.getGlobalId().toString());
+                                        // Implementation of publish command would go here
+                                    }
+                                    
+                                }
                             }
                         }
                     }
@@ -2136,7 +2442,7 @@ public class Dataverses extends AbstractApiBean {
 
             return ok(finalResponse);
         } catch (HttpResponseException ex) {
-            return error(Status.BAD_REQUEST, ex.getMessage());
+            return error(Status.BAD_GATEWAY, ex.getMessage());
         } catch (IOException ex) {
             logger.log(Level.SEVERE, "IO error occurred during dataset migration", ex);
             return error(Status.INTERNAL_SERVER_ERROR, "IO error during migration: " + ex.getMessage());
