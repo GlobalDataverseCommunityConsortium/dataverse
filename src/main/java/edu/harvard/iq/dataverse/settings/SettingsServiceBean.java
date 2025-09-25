@@ -12,6 +12,7 @@ import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.FlushModeType;
 import jakarta.persistence.PersistenceContext;
 
 import org.json.JSONArray;
@@ -710,6 +711,7 @@ public class SettingsServiceBean {
     public String get( String name ) {
         List<Setting> tokens = em.createNamedQuery("Setting.findByName", Setting.class)
                 .setParameter("name", name )
+                .setFlushMode(FlushModeType.COMMIT)
                 .getResultList();
         String val = null;
         if(tokens.size() > 0) {
