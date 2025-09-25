@@ -2130,7 +2130,7 @@ public class AddReplaceFileHelper{
                             }
                         } else {
                             JsonObjectBuilder fileoutput = Json.createObjectBuilder()
-                                    .add("errorMessage", "You must provide a storageidentifier, filename, and mimetype.")
+                                    .add("errorMessage", "You must provide a storageIdentifier, fileName, and mimeType.")
                                     .add("fileDetails", fileJson);
 
                             jarr.add(fileoutput);
@@ -2302,7 +2302,7 @@ public class AddReplaceFileHelper{
                             }
                         } else {
                             JsonObjectBuilder fileoutput = Json.createObjectBuilder()
-                                    .add("errorMessage", "You must provide a fileToReplaceId, storageidentifier, filename, and mimetype.")
+                                    .add("errorMessage", "You must provide a fileToReplaceId, storageIdentifier, fileName, and mimeType.")
                                     .add("fileDetails", fileJson);
 
                             jarr.add(fileoutput);
