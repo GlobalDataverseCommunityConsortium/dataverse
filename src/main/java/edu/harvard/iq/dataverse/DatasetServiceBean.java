@@ -16,6 +16,7 @@ import edu.harvard.iq.dataverse.engine.command.exception.CommandException;
 import edu.harvard.iq.dataverse.engine.command.impl.DestroyDatasetCommand;
 import edu.harvard.iq.dataverse.engine.command.impl.FinalizeDatasetPublicationCommand;
 import edu.harvard.iq.dataverse.engine.command.impl.GetDatasetStorageSizeCommand;
+import edu.harvard.iq.dataverse.engine.command.impl.ImportDatasetCommand;
 import edu.harvard.iq.dataverse.export.ExportService;
 import edu.harvard.iq.dataverse.globus.GlobusServiceBean;
 import edu.harvard.iq.dataverse.harvest.server.OAIRecordServiceBean;
@@ -1119,4 +1120,18 @@ public class DatasetServiceBean implements java.io.Serializable {
         return c.intValue(); // ignoring the truncation since the number should never be too large
     }
 
+    /**
+     * Imports a dataset in a new transaction to ensure it's fully persisted
+     * before subsequent operations.
+     * 
+     * @param dataset The dataset to import
+     * @param request The dataverse request
+     * @return The managed dataset
+     * @throws edu.harvard.iq.dataverse.engine.command.exception.CommandException
+     */
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public Dataset importDatasetInNewTransaction(Dataset dataset, DataverseRequest request) 
+            throws CommandException {
+        return commandEngine.submit(new ImportDatasetCommand(dataset, request));
+    }
 }
