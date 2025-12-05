@@ -1,6 +1,7 @@
 package edu.harvard.iq.dataverse.search;
 
 import edu.harvard.iq.dataverse.ControlledVocabularyValue;
+import edu.harvard.iq.dataverse.CurationStatus;
 import edu.harvard.iq.dataverse.DataFile;
 import edu.harvard.iq.dataverse.DataFileServiceBean;
 import edu.harvard.iq.dataverse.DataFileTag;
@@ -54,9 +55,11 @@ import java.io.InputStream;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -66,6 +69,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -82,6 +86,7 @@ import jakarta.ejb.EJB;
 import jakarta.ejb.EJBException;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
+
 import static jakarta.ejb.TransactionAttributeType.REQUIRES_NEW;
 
 import jakarta.inject.Inject;
@@ -93,6 +98,7 @@ import jakarta.persistence.Query;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -230,7 +236,8 @@ public class IndexServiceBean {
             solrInputDocument.addField(SearchFields.PUBLICATION_STATUS, UNPUBLISHED_STRING);
             solrInputDocument.addField(SearchFields.RELEASE_OR_CREATE_DATE, dataverse.getCreateDate());
         }
-        /* We don't really have harvested dataverses yet; 
+
+        /* We don't really have harvested dataverses yet;
            (I have in fact just removed the isHarvested() method from the Dataverse object) -- L.A.
         if (dataverse.isHarvested()) {
             solrInputDocument.addField(SearchFields.IS_HARVESTED, true);
@@ -315,6 +322,11 @@ public class IndexServiceBean {
         }
         
         solrInputDocument.addField(SearchFields.SUBTREE, dataversePaths);
+
+        if (dataverse.isReleased()) {
+            solrInputDocument.addField(SearchFields.DATASET_COUNT, dataverseService.getDatasetCount(dataverse.getId()));
+        }
+
         docs.add(solrInputDocument);
 
         String status;
@@ -1050,9 +1062,19 @@ public class IndexServiceBean {
             if (datasetVersion.isInReview()) {
                 solrInputDocument.addField(SearchFields.PUBLICATION_STATUS, IN_REVIEW_STRING);
             }
-            if(datasetVersion.getExternalStatusLabel()!=null) {
-                solrInputDocument.addField(SearchFields.EXTERNAL_STATUS, datasetVersion.getExternalStatusLabel());
+            CurationStatus status = datasetVersion.getCurrentCurationStatus();
+            if(status != null && Strings.isNotBlank(status.getLabel())) {
+                solrInputDocument.addField(SearchFields.CURATION_STATUS, status.getLabel());
             }
+            // Add the creation time of the curation status
+            if (status != null && status.getCreateTime() != null) {
+                // Convert Date to ISO-8601 format for Solr pdate field
+                String isoDateString = status.getCreateTime().toInstant()
+                        .atOffset(ZoneOffset.UTC)
+                        .format(DateTimeFormatter.ISO_INSTANT);
+                solrInputDocument.addField(SearchFields.CURATION_STATUS_CREATE_TIME, isoDateString);
+            }
+
 
             Set<String> langs = settingsService.getConfiguredLanguages();
             Map<Long, JsonObject> cvocMap = datasetFieldService.getCVocConf(true);
@@ -1284,7 +1306,9 @@ public class IndexServiceBean {
                                         solrInputDocument.addField(solrFieldFacetable, topicClassificationTerm);
                                     }
                                 } else {
-                                    solrInputDocument.addField(solrFieldFacetable, dsf.getValuesWithoutNaValues());
+                                    var values = dsf.getDisplayValues(); // for proper display of facets with &apos;
+                                    values.removeAll(Arrays.asList(DatasetField.NA_VALUE));
+                                    solrInputDocument.addField(solrFieldFacetable, values);
                                 }
                             }
                         }
@@ -1407,7 +1431,31 @@ public class IndexServiceBean {
                 query.setParameter(1, dataset.getReleasedVersion().getId());
                 query.setParameter(2, datasetVersion.getId());
 
-                changedFileMetadataIds.addAll(query.getResultList());
+                /*
+                 * When the query was configured to return Long, it was returning Integer. The query has been changed to return Integer now. The code here is robust if that changes in the future.
+                 */
+                List<Object> queryResults = query.getResultList();
+                for (Object result : queryResults) {
+                    if (result != null) {
+                        // Ensure we're adding Long objects to the list
+                        if (result instanceof Integer intResult) {
+                            logger.finest("Converted Integer result to Long: " + result);
+                            changedFileMetadataIds.add(Long.valueOf(intResult));
+                        } else if (result instanceof Long longResult) {
+                            // Already a Long, add directly
+                            logger.finest("Added existing Long to list: " + result);
+                            changedFileMetadataIds.add(longResult);
+                        } else {
+                            // If it's not a Long, convert it to one via String
+                            try {
+                                changedFileMetadataIds.add(Long.valueOf(result.toString()));
+                                logger.finest("Converted non-Long result to Long: " + result + " of type " + result.getClass().getName());
+                            } catch (NumberFormatException e) {
+                                logger.warning("Could not convert query result to Long: " + result);
+                            }
+                        }
+                    }
+                }
                 logger.fine(
                         "We are indexing a draft version of a dataset that has a released version. We'll be checking file metadatas if they are exact clones of the released versions.");
             } else if (datasetVersion.isDraft()) {
@@ -1481,6 +1529,8 @@ public class IndexServiceBean {
                 if (indexThisMetadata && (isReleasedVersion || changedFileMetadataIds.contains(fileMetadata.getId()))) {
                     indexThisFile = true;
                 } else if (indexThisMetadata) {
+                    // Draft version, file is not new or all file metadata matches the released version
+                    // The only thing left to check is variable-level metadata, index if there is a difference
                     logger.fine("Checking if this file metadata is a duplicate.");
                     FileMetadata getFromMap = fileMap.get(datafile.getId());
                     if (getFromMap != null) {
@@ -1488,12 +1538,16 @@ public class IndexServiceBean {
                             indexThisFile = true;
                             logger.fine("This file metadata hasn't changed since the released version; skipping indexing.");
                         }
+                    } else {
+                        logger.warning("File is not in released version when trying to compare variable metadata, fileId: " + datafile.getId());
                     }
                 }
                 if (indexThisFile) {
 
                     SolrInputDocument datafileSolrInputDocument = new SolrInputDocument();
                     Long fileEntityId = datafile.getId();
+                    logger.finest("Indexing file " + fileEntityId);
+
                     datafileSolrInputDocument.addField(SearchFields.ENTITY_ID, fileEntityId);
                     datafileSolrInputDocument.addField(SearchFields.DATAVERSE_VERSION_INDEXED_BY, dataverseVersion);
                     datafileSolrInputDocument.addField(SearchFields.IDENTIFIER, fileEntityId);
@@ -1701,7 +1755,7 @@ public class IndexServiceBean {
                     GlobalId filePid = datafile.getGlobalId();
                     datafileSolrInputDocument.addField(SearchFields.FILE_PERSISTENT_ID,
                             (filePid != null) ? filePid.toString() : null);
-                       
+
                     datafileSolrInputDocument.addField(SearchFields.SUBTREE, dataversePaths);
                     // datafileSolrInputDocument.addField(SearchFields.HOST_DATAVERSE,
                     // dataFile.getOwner().getOwner().getName());
@@ -1722,7 +1776,7 @@ public class IndexServiceBean {
                         datafileSolrInputDocument.addField(SearchFields.VARIABLE_COUNT, variables.size());
                         datafileSolrInputDocument.addField(SearchFields.OBSERVATIONS, observations);
                         datafileSolrInputDocument.addField(SearchFields.UNF, dtable.getUnf());
-                            
+
 
                         Map<Long, VariableMetadata> variableMap = null;
                         Collection<VariableMetadata> variablesByMetadata = fileMetadata.getVariableMetadatas();
@@ -2108,7 +2162,7 @@ public class IndexServiceBean {
         } catch (Exception ex) {
             logger.info("failed to find dataverseSegments for dataversePaths for " + SearchFields.SUBTREE + ": " + ex);
         }        
-        List<String> dataversePaths = getDataversePathsFromSegments(dataverseSegments);
+        Set<String> dataversePaths = new HashSet<>(getDataversePathsFromSegments(dataverseSegments));
         if (dataversePaths.size() > 0 && dvo.isInstanceofDataverse()) {
             // removing the dataverse's own id from the paths
             // fixes bug where if my parent dv was linked my dv was shown as linked to myself
@@ -2118,7 +2172,7 @@ public class IndexServiceBean {
         add linking paths
         */
         dataversePaths.addAll(findLinkingDataversePaths(findAllLinkingDataverses(dvo)));
-        return dataversePaths;
+        return new ArrayList<>(dataversePaths);
     }
 
     public String delete(Dataverse doomed) {

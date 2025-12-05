@@ -21,7 +21,7 @@ import java.util.logging.Logger;
  */
 @FacesConverter("dataverseConverter")
 public class DataverseConverter implements Converter {
-    private static final Logger logger = Logger.getLogger(DatasetPage.class.getCanonicalName());
+    private static final Logger logger = Logger.getLogger(DataverseConverter.class.getCanonicalName());
 
     
     //@EJB
@@ -34,7 +34,12 @@ public class DataverseConverter implements Converter {
             return CDI.current().select(DatasetPage.class).get().getSelectedHostDataverse();
         }
         else {
-            return dataverseService.find(Long.valueOf(submittedValue));
+            try {
+                return dataverseService.find(Long.parseLong(submittedValue));
+            } catch (NumberFormatException e) {
+                logger.warning("Submitted value is out of range for a Long: " + submittedValue);
+                return CDI.current().select(DatasetPage.class).get().getSelectedHostDataverse();
+            }
         }
         //return dataverseService.findByAlias(submittedValue);
     }

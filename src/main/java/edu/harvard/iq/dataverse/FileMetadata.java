@@ -49,6 +49,7 @@ import edu.harvard.iq.dataverse.datavariable.DataVariable;
 import edu.harvard.iq.dataverse.datavariable.VarGroup;
 import edu.harvard.iq.dataverse.datavariable.VariableMetadata;
 import edu.harvard.iq.dataverse.util.DateUtil;
+import edu.harvard.iq.dataverse.util.ListSplitUtil;
 import edu.harvard.iq.dataverse.util.StringUtil;
 import java.util.HashSet;
 import java.util.Set;
@@ -94,9 +95,10 @@ import jakarta.validation.constraints.Pattern;
                 "        )",
                 resultSetMapping = "IdToLongMapping"
     )
+/* When this mapping was to Long.class, Postgres was still returning an Integer, causing indexing failures - see #11776 */ 
 @SqlResultSetMapping(
         name = "IdToLongMapping",
-        columns = @ColumnResult(name = "id", type = Long.class)
+        columns = @ColumnResult(name = "id", type = Integer.class)
     )
 @Entity
 public class FileMetadata implements Serializable {
@@ -604,18 +606,18 @@ public class FileMetadata implements Serializable {
         }
     };
     
-    static Map<String,Long> categoryMap=null;
+    static Map<String, Long> categoryMap = null;
     
     public static void setCategorySortOrder(String categories) {
-       categoryMap=new HashMap<String, Long>();
-       long i=1;
-       for(String cat: categories.split(",\\s*")) {
-           categoryMap.put(cat.toUpperCase(), i);
-           i++;
-       }
+        categoryMap = new HashMap<String, Long>();
+        long i = 1;
+        for (String cat : ListSplitUtil.split(categories)) {
+            categoryMap.put(cat.toUpperCase(), i);
+            i++;
+        }
     }
     
-    public static Map<String,Long> getCategorySortOrder() {
+    public static Map<String, Long> getCategorySortOrder() {
         return categoryMap;
     }
     

@@ -172,7 +172,6 @@ public class DatasetField implements Serializable {
     }
 
     @OneToMany(mappedBy = "parentDatasetField", orphanRemoval = true, cascade = {CascadeType.REMOVE, CascadeType.MERGE, CascadeType.PERSIST})
-    @OrderBy("displayOrder ASC")
     private List<DatasetFieldCompoundValue> datasetFieldCompoundValues = new ArrayList<>();
 
     public List<DatasetFieldCompoundValue> getDatasetFieldCompoundValues() {
@@ -197,6 +196,7 @@ public class DatasetField implements Serializable {
 
     @ManyToMany(cascade = {CascadeType.MERGE})
     @JoinTable(indexes = {@Index(columnList="datasetfield_id"),@Index(columnList="controlledvocabularyvalues_id")})
+    @OrderBy("displayOrder ASC")
     private List<ControlledVocabularyValue> controlledVocabularyValues = new ArrayList<>();
 
     public List<ControlledVocabularyValue> getControlledVocabularyValues() {
@@ -361,6 +361,28 @@ public class DatasetField implements Serializable {
         if (!datasetFieldValues.isEmpty()) {
             for (DatasetFieldValue dsfv : datasetFieldValues) {
                 String value = dsfv.getValue();
+                if (value != null) {
+                    returnList.add(value);
+                }
+            }
+        } else {
+            for (ControlledVocabularyValue cvv : controlledVocabularyValues) {
+                if (cvv != null && cvv.getStrValue() != null) {
+                    returnList.add(cvv.getStrValue());
+                }
+            }
+        }
+        return returnList;
+    }
+    /**
+     * list of values (as opposed to display values).
+     * used for passing to solr for indexing
+     */
+    public List<String> getDisplayValues() {
+        List returnList = new ArrayList();
+        if (!datasetFieldValues.isEmpty()) {
+            for (DatasetFieldValue dsfv : datasetFieldValues) {
+                String value = dsfv.getDisplayValue();
                 if (value != null) {
                     returnList.add(value);
                 }
@@ -582,14 +604,15 @@ public class DatasetField implements Serializable {
         
         if (versionOrTemplate != null) {
             if (versionOrTemplate instanceof DatasetVersion) {
-                dsf.setDatasetVersion((DatasetVersion) versionOrTemplate);               
+                dsf.setDatasetVersion((DatasetVersion) versionOrTemplate);
             } else {
                 dsf.setTemplate((Template) versionOrTemplate);
             }
         }
         
         dsf.setParentDatasetFieldCompoundValue(parent);
-        dsf.setControlledVocabularyValues(controlledVocabularyValues);
+        
+        dsf.getControlledVocabularyValues().addAll(controlledVocabularyValues);
 
         for (DatasetFieldValue dsfv : datasetFieldValues) {
             dsf.getDatasetFieldValues().add(dsfv.copy(dsf));

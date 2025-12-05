@@ -16,11 +16,6 @@ Within the main repository, you may find the base image's files at ``<git root>/
 This Maven module uses the `Maven Docker Plugin <https://dmp.fabric8.io>`_ to build and ship the image.
 You may use, extend, or alter this image to your liking and/or host in some different registry if you want to.
 
-**NOTE: This image is created, maintained and supported by the Dataverse community on a best-effort basis.**
-IQSS will not offer you support how to deploy or run it, please reach out to the community (:ref:`support`) for help on using it.
-You might be interested in taking a look at :doc:`../developers/containers`, linking you to some (community-based)
-efforts.
-
 .. _base-image-supported-tags:
 
 Supported Image Tags
@@ -109,7 +104,7 @@ It inherits (is built on) an Ubuntu environment from the upstream
 `base image of Eclipse Temurin <https://hub.docker.com/_/eclipse-temurin>`_.
 You are free to change the JRE/JDK image to your liking (see below).
 
-
+.. _base-image-build-instructions:
 
 Build Instructions
 ++++++++++++++++++
