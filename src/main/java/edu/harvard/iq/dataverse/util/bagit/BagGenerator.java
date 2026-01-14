@@ -842,7 +842,7 @@ public class BagGenerator {
          */
         JsonLDTerm descriptionTerm = oremap.getDescriptionTerm();
         JsonLDTerm descriptionTextTerm = oremap.getDescriptionTextTerm();
-        if (descriptionTerm == null) {
+        if (descriptionTerm == null || descriptionTextTerm == null) {
             logger.warning("No description available for BagIt Info file");
         } else {
             info.append(
@@ -907,7 +907,7 @@ public class BagGenerator {
                 stringArray.add(iter.next().getAsJsonObject().getAsJsonPrimitive(key).getAsString());
             }
             if (stringArray.size() > 1) {
-                val = String.join(",", stringArray);
+                val = String.join(", ", stringArray);
             } else {
                 val = stringArray.get(0);
             }
