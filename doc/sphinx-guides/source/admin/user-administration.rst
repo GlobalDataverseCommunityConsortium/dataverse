@@ -111,6 +111,7 @@ This enables additional settings for each user in the notifications tab of their
 * ``RETURNEDDS`` Returned from review
 * ``REVOKEROLE`` Role is revoked
 * ``STATUSUPDATED`` Status of dataset has been updated
+* ``UNPUBLISHED_DRAFTS_REMINDER`` Draft dataset modified 6 months ago
 * ``SUBMITTEDDS`` Submitted for review
 * ``WORKFLOW_FAILURE`` External workflow run has failed
 * ``WORKFLOW_SUCCESS`` External workflow run has succeeded

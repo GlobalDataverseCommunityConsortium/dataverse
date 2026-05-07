@@ -590,6 +590,12 @@ public class MailServiceBean implements java.io.Serializable {
                 messageText += MessageFormat.format(pattern, paramArrayStatus);
                   
                 return messageText;
+            case UNPUBLISHED_DRAFTS_REMINDER:
+                version = (DatasetVersion) targetObject;
+                pattern = BundleUtil.getStringFromBundle("notification.email.unpublishedDraftReminder");
+                String[] paramArrayUnpublishedDraftReminder = {version.getDataset().getDisplayName(), getDatasetLink(version.getDataset())};
+                messageText += MessageFormat.format(pattern, paramArrayUnpublishedDraftReminder);
+                return messageText;
             case PIDRECONCILED:
                 version =  (DatasetVersion) targetObject;
                 pattern = BundleUtil.getStringFromBundle("notification.email.pid.reconciled");
@@ -803,6 +809,7 @@ public class MailServiceBean implements java.io.Serializable {
             case WORKFLOW_FAILURE:
             case PIDRECONCILED:
             case STATUSUPDATED:
+            case UNPUBLISHED_DRAFTS_REMINDER:
                 return versionService.find(userNotification.getObjectId());
             case CREATEACC:
                 return userNotification.getUser();

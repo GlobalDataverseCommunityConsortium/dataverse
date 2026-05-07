@@ -41,8 +41,8 @@ public class UserNotification implements Serializable {
         GLOBUSUPLOADCOMPLETED, GLOBUSUPLOADCOMPLETEDWITHERRORS,
         GLOBUSDOWNLOADCOMPLETED, GLOBUSDOWNLOADCOMPLETEDWITHERRORS, REQUESTEDFILEACCESS,
         GLOBUSUPLOADREMOTEFAILURE, GLOBUSUPLOADLOCALFAILURE, PIDRECONCILED,
-        DATASETMOVED;
-        
+        DATASETMOVED, UNPUBLISHED_DRAFTS_REMINDER;
+
         public String getDescription() {
             return BundleUtil.getStringFromBundle("notification.typeDescription." + this.name());
         }

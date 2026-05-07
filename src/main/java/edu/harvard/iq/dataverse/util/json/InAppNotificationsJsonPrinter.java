@@ -106,6 +106,7 @@ public class InAppNotificationsJsonPrinter {
             case PIDRECONCILED:
             case FILESYSTEMIMPORT:
             case CHECKSUMIMPORT:
+            case UNPUBLISHED_DRAFTS_REMINDER:
                 addDatasetVersionFields(notificationJson, userNotification);
                 break;
             case STATUSUPDATED:

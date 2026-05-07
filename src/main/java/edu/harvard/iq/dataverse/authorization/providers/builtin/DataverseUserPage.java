@@ -529,6 +529,7 @@ public class DataverseUserPage implements java.io.Serializable {
                 case WORKFLOW_FAILURE:
                 case PIDRECONCILED:
                 case STATUSUPDATED:
+                case UNPUBLISHED_DRAFTS_REMINDER:
                     userNotification.setTheObject(datasetVersionService.find(userNotification.getObjectId()));
                     break;
                     
