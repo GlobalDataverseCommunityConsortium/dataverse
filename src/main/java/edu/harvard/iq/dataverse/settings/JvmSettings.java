@@ -242,6 +242,13 @@ public enum JvmSettings {
     // Placeholder setting for a large list of extra settings
     MAIL_MTA_SETTING(SCOPE_MAIL_MTA),
     
+    // NOTIFICATION SETTINGS
+    SCOPE_NOTIFICATIONS(PREFIX, "notifications"),
+    SCOPE_DRAFTS(SCOPE_NOTIFICATIONS, "drafts"),
+    SCOPE_DRAFT_REMINDERS(SCOPE_DRAFTS, "reminders"),
+    DRAFT_REMINDERS_DELAY(SCOPE_DRAFT_REMINDERS, "delay"),
+    DRAFT_REMINDERS_SCHEDULE(SCOPE_DRAFT_REMINDERS, "schedule"),
+    
     // AUTH SETTINGS
     SCOPE_AUTH(PREFIX, "auth"),
     // AUTH: OIDC SETTINGS

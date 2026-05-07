@@ -3912,6 +3912,85 @@ Example: ``dataverse.coar-notify.relationship-announcement.notify-superusers-onl
 ``dataverse.bagit.zip.max-file-size``
   The maximum (uncompressed) size of a single file (in bytes) to include in a BagIt zip archive. Any file larger than this will be excluded. Excluded files will be handled as defined by ``dataverse.bagit.zip.holey`` - just listed if that setting is true or being transferred separately and placed next to the zipped bag. When not set, there is no limit.
 
+.. _unpublished-draft-reminders:
+
+Unpublished Draft Reminders
++++++++++++++++++++++++++++
+
+The Unpublished Draft Reminders feature periodically notifies users who have permission to edit draft datasets that have not been modified for a specific amount of time.
+
+.. _unpublished-draft-reminders-formatting:
+
+Duration and Schedule Format
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Settings for this feature use one of two time formats: **duration strings** or **EJB schedule expressions**.
+
+Duration Strings
+~~~~~~~~~~~~~~~~
+
+Used by :ref:`dataverse.notifications.drafts.reminders.delay` and optionally by :ref:`dataverse.notifications.drafts.reminders.schedule`.
+
+A duration string consists of a number followed by a unit (plural or singular). Supported units are:
+
+* ``minute`` or ``minutes``
+* ``hour`` or ``hours``
+* ``day`` or ``days``
+* ``month`` or ``months``
+
+**Examples:** ``6 months``, ``1 day``, ``12 hours``.
+
+EJB Schedule Expressions
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Used optionally by :ref:`dataverse.notifications.drafts.reminders.schedule`.
+
+For complex, calendar-based schedules, you can use an EJB schedule expression. This format uses key-value pairs separated by semicolons (``;``).
+
+Common keys include:
+
+* ``second`` (0-59)
+* ``minute`` (0-59)
+* ``hour`` (0-23)
+* ``dayOfMonth`` (1-31)
+* ``month`` (1-12 or month name, e.g., ``Jan``, ``Feb``, ...)
+* ``dayOfWeek`` (0-7 or day name, e.g., ``Mon``, ``Tue``, ...)
+* ``year`` (4-digit year)
+
+**Examples:**
+
+* ``hour=0;minute=0``: Runs every day at midnight.
+* ``dayOfWeek=Mon;hour=9;minute=0``: Runs every Monday at 9:00 AM.
+* ``dayOfMonth=1;hour=0;minute=0``: Runs on the first day of every month at midnight.
+
+For more details, see the `Jakarta EE ScheduleExpression documentation <https://jakarta.ee/specifications/platform/10/apidocs/jakarta/ejb/scheduleexpression>`_.
+
+.. _dataverse.notifications.drafts.reminders.delay:
+
+dataverse.notifications.drafts.reminders.delay
+++++++++++++++++++++++++++++++++++++++++++++++
+
+The amount of time a dataset must remain in draft status without any modifications before a reminder notification is sent.
+
+See :ref:`unpublished-draft-reminders-formatting` for details on the format (only **duration strings** are supported for this setting).
+
+Defaults to ``6 months``.
+
+Can also be set via *MicroProfile Config API* sources, e.g. the environment variable ``DATAVERSE_NOTIFICATIONS_DRAFTS_REMINDERS_DELAY``.
+
+.. _dataverse.notifications.drafts.reminders.schedule:
+
+dataverse.notifications.drafts.reminders.schedule
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+The schedule for the background task that processes unpublished draft reminders. This setting also determines the lookback window to ensure no datasets are missed between task executions.
+
+See :ref:`unpublished-draft-reminders-formatting` for details on the format (both **duration strings** and **EJB schedule expressions** are supported).
+
+Defaults to ``1 day``.
+
+Can also be set via *MicroProfile Config API* sources, e.g. the environment variable ``DATAVERSE_NOTIFICATIONS_DRAFTS_REMINDERS_SCHEDULE``.
+
 .. _feature-flags:
 
 Feature Flags
@@ -4081,6 +4160,14 @@ dataverse.feature.require-embargo-reason
 ++++++++++++++++++++++++++++++++++++++++
 
 Require an embargo reason when a user creates an embargo on one or more files. See :ref:`embargoes`.
+
+.. _dataverse.feature.notify-on-unpublished-drafts:
+
+dataverse.feature.notify-on-unpublished-drafts
+++++++++++++++++++++++++++++++++++++++++++++++
+
+Enables a scheduled task that sends notifications to users who have permission to edit draft datasets that haven't been modified for a configured period. The frequency of the task and the delay period are controlled by the ``dataverse.notifications.drafts.reminders.schedule`` and ``dataverse.notifications.drafts.reminders.delay`` settings. See :ref:`unpublished-draft-reminders-formatting`. Default is off/disabled.
+
 
 .. _:ApplicationServerSettings:
 

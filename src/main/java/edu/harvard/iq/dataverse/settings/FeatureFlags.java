@@ -256,7 +256,7 @@ public enum FeatureFlags {
     REQUIRE_EMBARGO_REASON("require-embargo-reason"),
     /**
      * This flag enables the scheduled task that sends notifications to users who can edit draft datasets
-     * that haven't been modified for 6 months.
+     * that haven't been modified for a configured period (see JvmSettings).
      *
      * @apiNote Raise flag by setting
      *          "dataverse.feature.notify-on-unpublished-drafts"

@@ -477,6 +477,14 @@
                                                         <f:param value="#{item.theObject.getDataset().getGlobalId()}"/>
                                                     </h:outputFormat>
                                                 </ui:fragment>
+                                                <ui:fragment rendered="#{item.type == 'UNPUBLISHED_DRAFTS_REMINDER'}">
+                                                    <span class="icon-dataset text-icon-inline text-muted"></span>
+                                                    <h:outputFormat value="#{bundle['notification.unpublishedDraftReminder']}" escape="false">
+                                                        <f:param value="#{item.theObject.getDataset().getGlobalId()}"/>
+                                                        <f:param value="#{item.theObject.getDataset().getDisplayName()}"/>
+                                                        <f:param value="#{item.additionalInfo != null ? item.additionalInfo : '6 months'}"/>
+                                                    </h:outputFormat>
+                                                </ui:fragment>
                                                 <ui:fragment rendered="#{item.type == 'DATASETMENTIONED'}">
                                                 <o:importFunctions type="edu.harvard.iq.dataverse.util.json.JsonUtil" />
                                                     <span class="icon-dataset text-icon-inline text-muted"></span>

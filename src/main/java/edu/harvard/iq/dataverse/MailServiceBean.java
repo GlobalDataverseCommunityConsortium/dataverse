@@ -593,7 +593,11 @@ public class MailServiceBean implements java.io.Serializable {
             case UNPUBLISHED_DRAFTS_REMINDER:
                 version = (DatasetVersion) targetObject;
                 pattern = BundleUtil.getStringFromBundle("notification.email.unpublishedDraftReminder");
-                String[] paramArrayUnpublishedDraftReminder = {version.getDataset().getDisplayName(), getDatasetLink(version.getDataset())};
+                String delay = userNotification.getAdditionalInfo();
+                if (delay == null) {
+                    delay = "6 months";
+                }
+                String[] paramArrayUnpublishedDraftReminder = {version.getDataset().getDisplayName(), getDatasetLink(version.getDataset()), delay};
                 messageText += MessageFormat.format(pattern, paramArrayUnpublishedDraftReminder);
                 return messageText;
             case PIDRECONCILED:

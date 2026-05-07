@@ -369,3 +369,19 @@ The available curationLabelSets can be listed with::
 If the :AllowedCurationLabels setting has a value, one of the available choices will always be "DISABLED" which allows curation labels to be turned off for a given collection/dataset.
 
 Collections can be configured to use specific curationLabelSets as well. See the "Dataverse Collections" section above.
+
+Unpublished Draft Reminders
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Dataverse can be configured to automatically send reminder notifications to users who have "Edit Dataset" permissions on datasets that have remained in draft status without modification for a certain period.
+
+This feature is disabled by default and can be enabled using the :ref:`notify-on-unpublished-drafts` feature flag.
+
+When enabled, a background task runs periodically (defaulting to once per day) and identifies datasets that passed the configured delay threshold (defaulting to 6 months) within the last processing window.
+
+Configuration of the delay and schedule is managed via JVM settings:
+
+* :ref:`dataverse.notifications.drafts.reminders.delay`
+* :ref:`dataverse.notifications.drafts.reminders.schedule`
+
+Notifications are sent once per dataset version that meets the criteria.

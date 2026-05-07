@@ -108,6 +108,7 @@ public class InAppNotificationsJsonPrinter {
             case CHECKSUMIMPORT:
             case UNPUBLISHED_DRAFTS_REMINDER:
                 addDatasetVersionFields(notificationJson, userNotification);
+                addAdditionalInfoField(notificationJson, userNotification);
                 break;
             case STATUSUPDATED:
                 addDatasetVersionFields(notificationJson, userNotification, true);
@@ -273,7 +274,10 @@ public class InAppNotificationsJsonPrinter {
 
     private void addDatasetMentionedFields(final NullSafeJsonBuilder notificationJson, final UserNotification userNotification) {
         addDatasetFields(notificationJson, userNotification);
+        addAdditionalInfoField(notificationJson, userNotification);
+    }
 
+    private void addAdditionalInfoField(final NullSafeJsonBuilder notificationJson, final UserNotification userNotification) {
         final String additionalInfo = userNotification.getAdditionalInfo();
 
         if (additionalInfo != null && !additionalInfo.isEmpty()) {
