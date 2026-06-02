@@ -20,7 +20,7 @@ import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
 import static edu.harvard.iq.dataverse.util.StringUtil.nonEmpty;
 
 import edu.harvard.iq.dataverse.engine.command.RequiredPermissions;
-import java.util.List;
+
 import java.sql.Timestamp;
 import java.time.Instant;
 
@@ -159,7 +159,7 @@ public class CreateNewDatasetCommand extends AbstractCreateDatasetCommand {
         final AuthenticatedUser requestor = user.isAuthenticated() ? (AuthenticatedUser) user : null;
 
         // 3. Get all users with publish permission and notify them.
-        ctxt.permissions().getUsersWithPermissionOn(Permission.PublishDataset, theDataset)
+        ctxt.permissions().getDistinctUsersWithPermissionOn(Permission.PublishDataset, theDataset)
                 .stream()
                 .filter(recipient -> allowSelfNotification || !recipient.equals(requestor))
                 .forEach(recipient -> ctxt.notifications().sendNotification(

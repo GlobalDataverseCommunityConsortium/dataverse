@@ -2,38 +2,25 @@ package edu.harvard.iq.dataverse.engine.command.impl;
 
 import edu.harvard.iq.dataverse.CurationStatus;
 import edu.harvard.iq.dataverse.Dataset;
-import edu.harvard.iq.dataverse.DatasetLock;
 import edu.harvard.iq.dataverse.DatasetVersion;
-import edu.harvard.iq.dataverse.DatasetVersionUser;
 import edu.harvard.iq.dataverse.UserNotification;
 import edu.harvard.iq.dataverse.authorization.Permission;
 import edu.harvard.iq.dataverse.authorization.users.AuthenticatedUser;
-import edu.harvard.iq.dataverse.batch.util.LoggingUtil;
-import edu.harvard.iq.dataverse.engine.command.AbstractCommand;
 import edu.harvard.iq.dataverse.engine.command.CommandContext;
 import edu.harvard.iq.dataverse.engine.command.DataverseRequest;
 import edu.harvard.iq.dataverse.engine.command.RequiredPermissions;
 import edu.harvard.iq.dataverse.engine.command.exception.CommandException;
 import edu.harvard.iq.dataverse.engine.command.exception.IllegalCommandException;
 import edu.harvard.iq.dataverse.settings.JvmSettings;
-import edu.harvard.iq.dataverse.settings.SettingsServiceBean;
 import edu.harvard.iq.dataverse.util.BundleUtil;
 import edu.harvard.iq.dataverse.util.SystemConfig;
 
-import java.io.IOException;
 import java.sql.Timestamp;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
-import java.util.concurrent.Future;
+import java.util.Set;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.util.Strings;
-import org.apache.solr.client.solrj.SolrServerException;
-
-import com.google.api.LabelDescriptor;
 
 @RequiredPermissions(Permission.PublishDataset)
 public class SetCurationStatusCommand extends AbstractDatasetCommand<Dataset> {
@@ -107,11 +94,11 @@ public class SetCurationStatusCommand extends AbstractDatasetCommand<Dataset> {
 
         boolean showToAll = JvmSettings.UI_SHOW_CURATION_STATUS_TO_ALL.lookupOptional(Boolean.class).orElse(false);
 
-        List<AuthenticatedUser> authUsers;
+        Set<AuthenticatedUser> authUsers;
         if (showToAll) {
-            authUsers = ctxt.permissions().getUsersWithPermissionOn(Permission.ViewUnpublishedDataset, savedDataset);
+            authUsers = ctxt.permissions().getDistinctUsersWithPermissionOn(Permission.ViewUnpublishedDataset, savedDataset);
         } else {
-            authUsers = ctxt.permissions().getUsersWithPermissionOn(Permission.PublishDataset, savedDataset);
+            authUsers = ctxt.permissions().getDistinctUsersWithPermissionOn(Permission.PublishDataset, savedDataset);
         }
         for (AuthenticatedUser au : authUsers) {
             ctxt.notifications().sendNotification(au, new Timestamp(new Date().getTime()), UserNotification.Type.STATUSUPDATED, savedDataset.getLatestVersion().getId(), "", requestor, false);

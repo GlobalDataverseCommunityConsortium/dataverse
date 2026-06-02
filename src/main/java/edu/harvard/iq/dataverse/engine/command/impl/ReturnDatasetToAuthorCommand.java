@@ -5,7 +5,6 @@ import edu.harvard.iq.dataverse.DatasetLock;
 import edu.harvard.iq.dataverse.UserNotification;
 import edu.harvard.iq.dataverse.authorization.Permission;
 import edu.harvard.iq.dataverse.authorization.users.AuthenticatedUser;
-import edu.harvard.iq.dataverse.batch.util.LoggingUtil;
 import edu.harvard.iq.dataverse.engine.command.CommandContext;
 import edu.harvard.iq.dataverse.engine.command.DataverseRequest;
 import edu.harvard.iq.dataverse.engine.command.RequiredPermissions;
@@ -14,10 +13,8 @@ import edu.harvard.iq.dataverse.engine.command.exception.IllegalCommandException
 import edu.harvard.iq.dataverse.settings.FeatureFlags;
 import edu.harvard.iq.dataverse.util.BundleUtil;
 import edu.harvard.iq.dataverse.workflows.WorkflowComment;
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.Future;
-import org.apache.solr.client.solrj.SolrServerException;
+
+import java.util.Set;
 
 @RequiredPermissions(Permission.PublishDataset)
 public class ReturnDatasetToAuthorCommand extends AbstractDatasetCommand<Dataset> {
@@ -61,8 +58,8 @@ public class ReturnDatasetToAuthorCommand extends AbstractDatasetCommand<Dataset
             Then remove reviewers from the autors list
             Finally send a notification to the remaining (non-reviewing) authors - Hey! your dataset was rejected.
         */
-        List<AuthenticatedUser> reviewers = ctxt.permissions().getUsersWithPermissionOn(Permission.PublishDataset, savedDataset);
-        List<AuthenticatedUser> authors   = ctxt.permissions().getUsersWithPermissionOn(Permission.EditDataset, savedDataset);
+        Set<AuthenticatedUser> reviewers = ctxt.permissions().getDistinctUsersWithPermissionOn(Permission.PublishDataset, savedDataset);
+        Set<AuthenticatedUser> authors   = ctxt.permissions().getDistinctUsersWithPermissionOn(Permission.EditDataset, savedDataset);
         authors.removeAll(reviewers);
         for (AuthenticatedUser au : authors) {
             ctxt.notifications().sendNotification(au, getTimestamp(), UserNotification.Type.RETURNEDDS, savedDataset.getLatestVersion().getId(), comment);

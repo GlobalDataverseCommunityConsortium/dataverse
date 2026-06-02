@@ -24,6 +24,7 @@ import edu.harvard.iq.dataverse.mocks.MocksFactory;
 import edu.harvard.iq.dataverse.search.IndexServiceBean;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
@@ -125,9 +126,9 @@ public class SubmitDatasetForReviewCommandTest {
             public PermissionServiceBean permissions() {
                 return new PermissionServiceBean() {
                     @Override
-                    public List<AuthenticatedUser> getUsersWithPermissionOn(Permission permission, DvObject dvo) {
+                    public Set<AuthenticatedUser> getDistinctUsersWithPermissionOn(Permission permission, DvObject dvo) {
                         // We only need permissions for notifications, which we are testing in InReviewWorkflowIT.
-                        return Collections.emptyList();
+                        return Collections.emptySet();
                     }
                 };
             }

@@ -25,6 +25,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 @Singleton
@@ -135,7 +136,7 @@ public class DraftReminderServiceBean {
 
         for (DatasetVersion dv : draftVersions) {
             Dataset dataset = dv.getDataset();
-            List<AuthenticatedUser> editors = permissionService.getUsersWithPermissionOn(Permission.EditDataset, dataset);
+            Set<AuthenticatedUser> editors = permissionService.getDistinctUsersWithPermissionOn(Permission.EditDataset, dataset);
             
             for (AuthenticatedUser editor : editors) {
                 userNotificationService.sendNotification(editor, Timestamp.from(triggerTime.toInstant()), UserNotification.Type.UNPUBLISHED_DRAFTS_REMINDER, dv.getId(), null, null, false, delayStr);

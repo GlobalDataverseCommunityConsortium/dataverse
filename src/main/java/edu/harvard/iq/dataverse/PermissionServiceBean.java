@@ -632,8 +632,8 @@ public class PermissionServiceBean {
         return new RequestPermissionQuery(null, req);
     }
 
-    public List<AuthenticatedUser> getUsersWithPermissionOn(Permission permission, DvObject dvo) {
-        List<AuthenticatedUser> usersHasPermissionOn = new LinkedList<>();
+    public Set<AuthenticatedUser> getDistinctUsersWithPermissionOn(Permission permission, DvObject dvo) {
+        Set<AuthenticatedUser> usersHasPermissionOn = new LinkedHashSet<>();
         Set<RoleAssignment> ras = roleService.rolesAssignments(dvo);
         for (RoleAssignment ra : ras) {
             if (ra.getRole().permissions().contains(permission)) {
@@ -643,17 +643,6 @@ public class PermissionServiceBean {
         }
 
         return usersHasPermissionOn;
-    }
-
-    public Map<String, AuthenticatedUser> getDistinctUsersWithPermissionOn(Permission permission, DvObject dvo) {
-
-        List<AuthenticatedUser> users = getUsersWithPermissionOn(permission, dvo);
-        Map<String, AuthenticatedUser> distinctUsers = new HashMap<>();
-        users.forEach((au) -> {
-            distinctUsers.put(au.getIdentifier(), au);
-        });
-
-        return distinctUsers;
     }
 
     public List<Long> getDvObjectsUserHasRoleOn(User user) {

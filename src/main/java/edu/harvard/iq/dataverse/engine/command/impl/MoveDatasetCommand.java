@@ -187,18 +187,17 @@ public class MoveDatasetCommand extends AbstractVoidCommand {
         final AuthenticatedUser requestor = user.isAuthenticated() ? (AuthenticatedUser) user : null;
 
         // 3. Get all users with publish permission on the dataset's original owner (dataverse) and notify them.
-        Map<String, AuthenticatedUser> recipients = ctxt.permissions().getDistinctUsersWithPermissionOn(Permission.PublishDataset, originalOwner);
+        Set<AuthenticatedUser> recipients = ctxt.permissions().getDistinctUsersWithPermissionOn(Permission.PublishDataset, originalOwner);
         // make sure the requestor is in the recipient list in case they don't match the permission but only if allowSelfNotification is true
         if (requestor != null) {
             if (Boolean.TRUE.equals(allowSelfNotification)) {
-                recipients.put(requestor.getIdentifier(), requestor);
+                recipients.add(requestor);
             } else {
-                recipients.remove(requestor.getIdentifier());
+                recipients.remove(requestor);
             }
         }
 
-        recipients.values()
-                .stream()
+        recipients.stream()
                 .forEach(recipient -> ctxt.notifications().sendNotification(
                         recipient,
                         Timestamp.from(Instant.now()),
