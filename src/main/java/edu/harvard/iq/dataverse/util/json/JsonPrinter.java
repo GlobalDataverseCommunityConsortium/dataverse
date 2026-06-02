@@ -423,6 +423,12 @@ public class JsonPrinter {
             guestbookObject.add("nameRequired", guestbook.isNameRequired());
             guestbookObject.add("institutionRequired", guestbook.isInstitutionRequired());
             guestbookObject.add("positionRequired", guestbook.isPositionRequired());
+            if (guestbook.getUsageCount() != null) {
+                guestbookObject.add("usageCount", guestbook.getUsageCount());
+            }
+            if (guestbook.getResponseCount() != null) {
+                guestbookObject.add("responseCount", guestbook.getResponseCount());
+            }
             JsonArrayBuilder customQuestions = Json.createArrayBuilder();
             if (guestbook.getCustomQuestions() != null) {
                 for (CustomQuestion cq : guestbook.getCustomQuestions()) {
@@ -545,6 +551,7 @@ public class JsonPrinter {
                 .add("separator", ds.getSeparator())
                 .add("publisher", BrandingUtil.getInstallationBrandName())
                 .add("publicationDate", ds.getPublicationDateFormattedYYYYMMDD())
+                .add("image_url", ds.getThumbnailUrl())
                 .add("storageIdentifier", ds.getStorageIdentifier());
         if (ds.getGuestbook() != null) {
             bld.add("guestbookId", ds.getGuestbook().getId());

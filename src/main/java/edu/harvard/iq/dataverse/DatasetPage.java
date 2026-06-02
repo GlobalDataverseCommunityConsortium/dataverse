@@ -111,7 +111,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.primefaces.event.FileUploadEvent;
 import org.primefaces.model.file.UploadedFile;
 
-import jakarta.validation.ConstraintViolation;
 import java.util.Arrays;
 import java.util.HashSet;
 import jakarta.faces.model.SelectItem;
@@ -4039,8 +4038,8 @@ public class DatasetPage implements java.io.Serializable {
             dataset.setOwner(ownerId != null ? dataverseService.find(ownerId) : null);
         }
         // Validate
-        Set<ConstraintViolation> constraintViolations = workingVersion.validate();
-        if (!constraintViolations.isEmpty()) {
+        workingVersion.validate(); // add validation messages to dataset fields
+        if (!workingVersion.isValid()) {
             FacesContext.getCurrentInstance().validationFailed();
             return "";
         }
@@ -4880,13 +4879,6 @@ public class DatasetPage implements java.io.Serializable {
             return datasetSubmitForReviewCustomText;
         }
         return "";
-    }
-
-    public String getVariableMetadataURL(Long fileid) {
-        String myHostURL = getDataverseSiteUrl();
-        String metaURL = myHostURL + "/api/meta/datafile/" + fileid;
-
-        return metaURL;
     }
 
     public String getTabularDataFileURL(Long fileid) {

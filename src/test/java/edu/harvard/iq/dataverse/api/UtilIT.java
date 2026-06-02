@@ -612,9 +612,19 @@ public class UtilIT {
     }
 
     static Response getGuestbooks(String dataverseAlias, String apiToken) {
-        RequestSpecification requestSpec = given()
-                .header(API_TOKEN_HTTP_HEADER, apiToken);
-        return requestSpec.get("/api/guestbooks/" + dataverseAlias + "/list" );
+        return getGuestbooks(dataverseAlias, apiToken, false,null);
+    }
+
+    static Response getGuestbooks(String dataverseAlias, String apiToken, boolean includeStats, Boolean includeInherited) {
+        RequestSpecification requestSpec = given();
+        requestSpec.queryParam("includeStats", includeStats);
+        if (apiToken != null) {
+            requestSpec.header(API_TOKEN_HTTP_HEADER, apiToken);
+        }
+        if (includeInherited != null) {
+            requestSpec.queryParam("includeInherited", includeInherited);
+        }
+        return requestSpec.get("/api/guestbooks/" + dataverseAlias + "/list");
     }
 
     static Response enableGuestbook(String dataverseAlias, Long guestbookId, String apiToken, String enable) {
@@ -1267,7 +1277,9 @@ public class UtilIT {
 
     static Response getDownloadFileUrlWithGuestbookResponse(Integer fileId, String apiToken, String body) {
         RequestSpecification requestSpecification = given();
-        requestSpecification.header(API_TOKEN_HTTP_HEADER, apiToken);
+        if (apiToken != null) {
+            requestSpecification.header(API_TOKEN_HTTP_HEADER, apiToken);
+        }
         if (body != null) {
             requestSpecification.body(body);
         }
@@ -1487,11 +1499,6 @@ public class UtilIT {
         }
 
         return request.get("/api/files/" + fileId + "/versionDifferences");
-    }
-
-    static Response testIngest(String fileName, String fileType) {
-        return given()
-                .get("/api/ingest/test/file?fileName=" + fileName + "&fileType=" + fileType);
     }
 
     static Response redetectFileType(String fileId, boolean dryRun, String apiToken) {
@@ -2294,10 +2301,15 @@ public class UtilIT {
     }
 
     static Response moveDataverse(String movedDataverseAlias, String targetDataverseAlias, Boolean force, String apiToken) {
-        Response response = given()
-                .header(API_TOKEN_HTTP_HEADER, apiToken)
-                .post("api/dataverses/" + movedDataverseAlias + "/move/" + targetDataverseAlias + "?forceMove=" + force + "&key=" + apiToken);
-        return response;
+        RequestSpecification requestSpecification = given();
+        if (apiToken != null) {
+            requestSpecification.header(API_TOKEN_HTTP_HEADER, apiToken);
+            requestSpecification.queryParam("key", apiToken);
+        }
+        if (force != null) {
+            requestSpecification.queryParam("forceMove", force);
+        }
+        return requestSpecification.post("api/dataverses/" + movedDataverseAlias + "/move/" + targetDataverseAlias);
     }
 
     static Response moveDataset(String idOrPersistentIdOfDatasetToMove, String destinationDataverseAlias, String apiToken) {
@@ -2657,15 +2669,16 @@ public class UtilIT {
         return requestSpecification.get("/api/search?q=" + query + parameterString);
     }
 
-    private static void sleepForDatasetIndex(String query, String apiToken) {
+    static void sleepForDatasetIndex(String query, String apiToken) {
+        String id = query;
         if (query.contains("id:dataset") || query.contains("id:datafile")) {
             String[] splitted = query.split("_");
             if (splitted.length >= 2) {
-                boolean ok = UtilIT.sleepForReindex(String.valueOf(splitted[1]), apiToken, 5);
-                if (!ok) {
-                    logger.info("Still indexing after 5 seconds");
-                }
+                id = splitted[1];
             }
+        }
+        if (!UtilIT.sleepForReindex(id, apiToken, 10)) {
+            logger.warning("Still indexing after 10 seconds");
         }
     }
 
@@ -5564,8 +5577,10 @@ public class UtilIT {
         gb.getCustomQuestions().get(2).setId(jsonPath.getLong("data.customQuestions[2].id"));
 
         // Add the Guestbook to the Dataset
-        Response setGuestbook = UtilIT.updateDatasetGuestbook(persistentId, guestbookId, apiToken);
-        setGuestbook.prettyPrint();
+        if (persistentId != null) {
+            Response setGuestbook = UtilIT.updateDatasetGuestbook(persistentId, guestbookId, apiToken);
+            setGuestbook.prettyPrint();
+        }
         return gb;
     }
 
