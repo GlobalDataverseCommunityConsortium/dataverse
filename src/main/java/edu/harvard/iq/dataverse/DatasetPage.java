@@ -7041,4 +7041,28 @@ public class DatasetPage implements java.io.Serializable {
     public void validateEmbargoReason(FacesContext context, UIComponent component, Object value) {
         FileUtil.validateEmbargoReason(context, component, value, removeEmbargo);
     }
+
+    public List<ControlledVocabularyValue> completeControlledVocabularyValue(String query) {
+        DatasetField dsf = (DatasetField) UIComponent.getCurrentComponent(FacesContext.getCurrentInstance()).getAttributes().get("dsf");
+        if (dsf == null || dsf.getDatasetFieldType() == null || dsf.getDatasetFieldType().getControlledVocabularyValues() == null) {
+            return Collections.emptyList();
+        }
+
+        List<ControlledVocabularyValue> results = new ArrayList<>();
+        String queryLower = query.toLowerCase();
+        String mdLangCode = null;
+        if (dsf.getDatasetVersion() != null && dsf.getDatasetVersion().getDataset() != null) {
+            mdLangCode = dsf.getDatasetVersion().getDataset().getMetadataLanguage();
+        }
+
+        for (ControlledVocabularyValue cvv : dsf.getDatasetFieldType().getControlledVocabularyValues()) {
+            if (cvv.getLocaleStrValue(mdLangCode).toLowerCase().contains(queryLower)) {
+                results.add(cvv);
+            }
+            if (results.size() >= 10) {
+                break;
+            }
+        }
+        return results;
+    }
 }

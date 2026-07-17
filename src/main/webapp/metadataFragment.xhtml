@@ -300,10 +300,17 @@
                                                     <div class="form-group dataset-field-values">
                                                         <div class="form-col-container col-sm-9 edit-field">
                                                             <p:selectOneMenu value="#{dsf.singleControlledVocabularyValue}" converter="controlledVocabularyValueConverter" style="width: auto !important; max-width:100%; min-width:200px;" styleClass="form-control primitive"
-                                                                             id="unique1" rendered="#{!dsf.datasetFieldType.allowMultiples}" filter="#{(dsf.datasetFieldType.controlledVocabularyValues.size() lt 10) ? 'false':'true'}" filterMatchMode="contains">
+                                                                             id="unique1" rendered="#{!dsf.datasetFieldType.allowMultiples and dsf.datasetFieldType.controlledVocabularyValues.size() lt 501}" filter="#{(dsf.datasetFieldType.controlledVocabularyValues.size() lt 10) ? 'false':'true'}" filterMatchMode="contains">
                                                                 <f:selectItem itemLabel="#{bundle.select}" itemValue="" noSelectionOption="true"/>
                                                                 <f:selectItems value="#{dsf.datasetFieldType.controlledVocabularyValues}" var="cvv" itemLabel="#{cvv.getLocaleStrValue(mdLangCode)}" itemValue="#{cvv}"/>
                                                             </p:selectOneMenu>
+                                                            <p:autoComplete value="#{dsf.singleControlledVocabularyValue}" converter="controlledVocabularyValueConverter"
+                                                                             id="unique1_autocomplete" rendered="#{!dsf.datasetFieldType.allowMultiples and dsf.datasetFieldType.controlledVocabularyValues.size() gt 500}"
+                                                                             completeMethod="#{DatasetPage.completeControlledVocabularyValue}"
+                                                                             var="cvv" itemLabel="#{cvv.getLocaleStrValue(mdLangCode)}" itemValue="#{cvv}"
+                                                                             forceSelection="true" dropdown="true" minQueryLength="2" scrollHeight="250">
+                                                                <f:attribute name="dsf" value="#{dsf}"/>
+                                                            </p:autoComplete>
                                                             <!--
                                                             <p:outputPanel id="selectedValsList" style="padding-top:.5em;">
                                                                 <ui:repeat value="#{dsf.controlledVocabularyValues}" var="cvv" rendered="#{!empty dsf.controlledVocabularyValues}">
@@ -313,9 +320,17 @@
                                                             -->
                                                             <p:selectCheckboxMenu value="#{dsf.controlledVocabularyValues}" converter="controlledVocabularyValueConverter" styleClass="form-control"
                                                                                   filter="#{(dsf.datasetFieldType.controlledVocabularyValues.size() lt 10) ? 'false':'true'}" filterMatchMode="contains" label="#{bundle.select}"  multiple="true" showHeader="#{(dsf.datasetFieldType.controlledVocabularyValues.size() lt 10) ? 'false':'true'}" 
-                                                                                  id="unique2" rendered="#{dsf.datasetFieldType.allowMultiples}">
+                                                                                  id="unique2" rendered="#{dsf.datasetFieldType.allowMultiples and dsf.datasetFieldType.controlledVocabularyValues.size() lt 501}">
                                                                 <f:selectItems value="#{dsf.datasetFieldType.controlledVocabularyValues}" var="cvv" itemLabel="#{cvv.getLocaleStrValue(mdLangCode)}" itemValue="#{cvv}"/>
                                                             </p:selectCheckboxMenu>
+                                                            <p:autoComplete value="#{dsf.controlledVocabularyValues}" converter="controlledVocabularyValueConverter"
+                                                                             id="unique2_autocomplete" rendered="#{dsf.datasetFieldType.allowMultiples and dsf.datasetFieldType.controlledVocabularyValues.size() gt 500}"
+                                                                             completeMethod="#{DatasetPage.completeControlledVocabularyValue}"
+                                                                             var="cvv" itemLabel="#{cvv.getLocaleStrValue(mdLangCode)}" itemValue="#{cvv}"
+                                                                             forceSelection="true" dropdown="true" minQueryLength="2" scrollHeight="250"
+                                                                             multiple="true">
+                                                                <f:attribute name="dsf" value="#{dsf}"/>
+                                                            </p:autoComplete>
                                                             <div class="ui-message ui-message-error ui-widget ui-corner-all" aria-live="polite" jsf:rendered="#{!empty dsf.validationMessage}">
                                                                 <span class="ui-message-error-detail">#{dsf.validationMessage}</span>
                                                             </div>
@@ -381,10 +396,17 @@
                                                             <!-- MOVED SELECT ONE TO dataFieldForEdit -->
                                                             <div jsf:rendered="#{subdsf.datasetFieldType.controlledVocabulary}" data-cvoc-managed-field="#{settingsWrapper.isCvocField(subdsf.datasetFieldType.id)? subdsf.datasetFieldType.name : ''}">
                                                                 <p:selectOneMenu id="cvv" value="#{subdsf.singleControlledVocabularyValue}" converter="controlledVocabularyValueConverter" style="width: auto !important; max-width:100%; min-width:200px;"
-                                                                                 rendered="#{!subdsf.datasetFieldType.allowMultiples}" filter="#{(subdsf.datasetFieldType.controlledVocabularyValues.size() lt 10) ? 'false':'true'}" filterMatchMode="contains" >
+                                                                                 rendered="#{!subdsf.datasetFieldType.allowMultiples and subdsf.datasetFieldType.controlledVocabularyValues.size() lt 501}" filter="#{(subdsf.datasetFieldType.controlledVocabularyValues.size() lt 10) ? 'false':'true'}" filterMatchMode="contains" >
                                                                     <f:selectItem itemLabel="#{bundle.select}" itemValue="" noSelectionOption="true"/>
                                                                     <f:selectItems value="#{subdsf.datasetFieldType.controlledVocabularyValues}" var="cvv" itemLabel="#{cvv.getLocaleStrValue(mdLangCode)}" itemValue="#{cvv}" />
                                                                 </p:selectOneMenu>
+                                                                <p:autoComplete id="cvv_autocomplete" value="#{subdsf.singleControlledVocabularyValue}" converter="controlledVocabularyValueConverter"
+                                                                                 rendered="#{!subdsf.datasetFieldType.allowMultiples and subdsf.datasetFieldType.controlledVocabularyValues.size() gt 500}"
+                                                                                 completeMethod="#{DatasetPage.completeControlledVocabularyValue}"
+                                                                                 var="cvv" itemLabel="#{cvv.getLocaleStrValue(mdLangCode)}" itemValue="#{cvv}"
+                                                                                 forceSelection="true" dropdown="true" minQueryLength="2" scrollHeight="250">
+                                                                    <f:attribute name="dsf" value="#{subdsf}"/>
+                                                                </p:autoComplete>
                                                                 <!--
                                                                 <p:outputPanel id="selectedValsListCompound" style="padding-top:.5em;">
                                                                     <ui:repeat value="#{subdsf.controlledVocabularyValues}" var="cvv" rendered="#{!empty subdsf.controlledVocabularyValues}">
@@ -399,11 +421,19 @@
                                                                 -->
                                                                 </ui:remove> 
                                                                     <p:selectCheckboxMenu value="#{subdsf.controlledVocabularyValues}" converter="controlledVocabularyValueConverter"
-                                                                                          rendered="#{subdsf.datasetFieldType.allowMultiples}" label="#{bundle.select}" multiple="true"
+                                                                                          rendered="#{subdsf.datasetFieldType.allowMultiples and subdsf.datasetFieldType.controlledVocabularyValues.size() lt 501}" label="#{bundle.select}" multiple="true"
                                                                                           filter="#{(subdsf.datasetFieldType.controlledVocabularyValues.size() lt 10) ? 'false':'true'}" filterMatchMode="contains" 
                                                                                           showHeader="#{(subdsf.datasetFieldType.controlledVocabularyValues.size() lt 10) ? 'false':'true'}">
                                                                         <f:selectItems value="#{subdsf.datasetFieldType.controlledVocabularyValues}" var="cvv" itemLabel="#{cvv.getLocaleStrValue(mdLangCode)}" itemValue="#{cvv}" />
                                                                     </p:selectCheckboxMenu>
+                                                                    <p:autoComplete id="cvv_multi_autocomplete" value="#{subdsf.controlledVocabularyValues}" converter="controlledVocabularyValueConverter"
+                                                                                     rendered="#{subdsf.datasetFieldType.allowMultiples and subdsf.datasetFieldType.controlledVocabularyValues.size() gt 500}"
+                                                                                     completeMethod="#{DatasetPage.completeControlledVocabularyValue}"
+                                                                                     var="cvv" itemLabel="#{cvv.getLocaleStrValue(mdLangCode)}" itemValue="#{cvv}"
+                                                                                     forceSelection="true" dropdown="true" minQueryLength="2" scrollHeight="250"
+                                                                                     multiple="true">
+                                                                        <f:attribute name="dsf" value="#{subdsf}"/>
+                                                                    </p:autoComplete>
 
                                                                 <div class="ui-message ui-message-error ui-widget ui-corner-all" aria-live="polite" jsf:rendered="#{!empty subdsf.validationMessage}">
                                                                     <span class="ui-message-error-detail">#{subdsf.validationMessage}</span>
