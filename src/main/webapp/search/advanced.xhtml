@@ -90,12 +90,21 @@
                                               data-toggle="tooltip" data-placement="auto right" data-original-title="#{bundle['advanced.search.dataverses.subject.tip']}"></span>
                                     </label>
                                     <div class="col-sm-6">
-                                        <div class="ui-inputfield form-control select-scroll-block">
+                                        <div class="ui-inputfield form-control select-scroll-block" jsf:rendered="#{AdvancedSearchPage.dvFieldSubjectValues.size() lt 501}">
                                             <p:selectManyCheckbox value="#{AdvancedSearchPage.dvFieldSubject}" layout="pageDirection">
                                                 <f:selectItems value="#{AdvancedSearchPage.dvFieldSubjectValues}" var="cvv"
                                                                itemLabel="#{cvv.localeStrValue}" itemValue="#{cvv.strValue}"/>
                                             </p:selectManyCheckbox>
                                         </div>
+                                        <p:autoComplete value="#{AdvancedSearchPage.dvFieldSubject}"
+                                                         id="dvFieldSubject_autocomplete"
+                                                         rendered="#{AdvancedSearchPage.dvFieldSubjectValues.size() gt 500}"
+                                                         completeMethod="#{AdvancedSearchPage.completeControlledVocabularyValue}"
+                                                         var="cvv" itemLabel="#{cvv.localeStrValue}" itemValue="#{cvv.strValue}"
+                                                         forceSelection="true" dropdown="true" minQueryLength="2" scrollHeight="250"
+                                                         multiple="true">
+                                            <f:attribute name="dsft" value="#{AdvancedSearchPage.subjectDatasetFieldType}"/>
+                                        </p:autoComplete>
                                     </div>
                                 </div>
                             </div>
@@ -133,12 +142,21 @@
                                                         <f:passThroughAttribute name="data-cvoc-placeholder" value=""/>
                                                     </p:inputText>
                                                 </ui:fragment>
-                                                <div class="ui-inputfield form-control select-scroll-block" jsf:rendered="#{!empty item.controlledVocabularyValues}">
+                                                <div class="ui-inputfield form-control select-scroll-block" jsf:rendered="#{!empty item.controlledVocabularyValues and item.controlledVocabularyValues.size() lt 501}">
                                                     <p:selectManyCheckbox value="#{item.listValues}" layout="pageDirection">
                                                         <f:selectItems value="#{item.controlledVocabularyValues}" var="cvs"
                                                                        itemLabel="#{cvs.localeStrValue}" itemValue="#{cvs.strValue}"/>
                                                     </p:selectManyCheckbox>
                                                 </div>
+                                                <p:autoComplete value="#{item.listValues}"
+                                                                 id="searchValue_autocomplete"
+                                                                 rendered="#{!empty item.controlledVocabularyValues and item.controlledVocabularyValues.size() gt 500}"
+                                                                 completeMethod="#{AdvancedSearchPage.completeControlledVocabularyValue}"
+                                                                 var="cvv" itemLabel="#{cvv.localeStrValue}" itemValue="#{cvv.strValue}"
+                                                                 forceSelection="true" dropdown="true" minQueryLength="2" scrollHeight="250"
+                                                                 multiple="true">
+                                                    <f:attribute name="dsft" value="#{item}"/>
+                                                </p:autoComplete>
                                             </div>
                                         </div>
                                     </ui:repeat>
