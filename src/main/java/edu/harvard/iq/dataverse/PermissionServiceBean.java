@@ -326,6 +326,11 @@ public class PermissionServiceBean {
      * @param req The request whose permissions are queried
      * @param dvo The objects whose children we list
      * @param required (sub)set of permissions {@code req} has on the objects in the returned list
+     * <p>
+     * A child whose direct role assignments include
+     * {@link Permission#ActAsSuperuser} is treated as satisfying any
+     * {@code required} set.
+     *
      * @param includeReleased include released dataverses and datasets without checking permissions
      * @return list of {@code dvo} children over which {@code req} has at least {@code required} permissions.
      */
@@ -504,6 +509,19 @@ public class PermissionServiceBean {
         return isSuperuserOn((AuthenticatedUser) user, dvo);
     }
 
+    /**
+     * Whether {@code user} may act as a superuser on {@code dvo}: either a
+     * global superuser, or the holder ("scoped superuser") of a role containing
+     * {@link Permission#ActAsSuperuser} assigned on {@code dvo} or on any
+     * ancestor up to the permission root. See {@link Permission#ActAsSuperuser}
+     * for what that entails.
+     * <p>
+     * Caveat: groups are resolved with {@link GroupServiceBean#groupsFor(RoleAssignee, DvObject)},
+     * not from a {@link DataverseRequest}. The IP and mail domain group
+     * providers return no groups on that path, so those groups, and explicit
+     * groups that contain them, cannot confer {@code ActAsSuperuser}, unlike
+     * other permissions.
+     */
     public boolean isSuperuserOn(AuthenticatedUser user, DvObject dvo) {
         if (user == null) {
             return false;
@@ -519,6 +537,17 @@ public class PermissionServiceBean {
         return hasGroupPermissionsFor(ras, dvo, EnumSet.of(Permission.ActAsSuperuser));
     }
 
+    /**
+     * Whether {@code user} is a global superuser or holds a role containing
+     * {@link Permission#ActAsSuperuser} on at least one object anywhere in the
+     * installation. Used to decide whether to show the Dashboard and its Move
+     * Data pages.
+     * <p>
+     * This is an approximation: it only considers the user and the persistent
+     * groups returned by {@code GroupServiceBean.groupsFor(RoleAssignee)}, so
+     * assignments to request-based groups (IP groups and mail domain groups)
+     * are not found.
+     */
     public boolean isSuperuserOnSomeDvObject(AuthenticatedUser user) {
         if (user == null) {
             return false;
@@ -689,6 +718,17 @@ public class PermissionServiceBean {
         return new RequestPermissionQuery(null, req);
     }
 
+    /**
+     * Lists the users holding {@code permission} through role assignments
+     * returned by {@code roleService.rolesAssignments(dvo)}. Used to choose
+     * notification recipients (file access requests, datasets submitted for
+     * review or returned to authors).
+     * <p>
+     * Only the permissions a role explicitly lists are checked. Holders of
+     * {@link Permission#ActAsSuperuser}, who can act on all of these, are not
+     * included unless their role also lists {@code permission}. Global
+     * superusers are not included either.
+     */
     public List<AuthenticatedUser> getUsersWithPermissionOn(Permission permission, DvObject dvo) {
         List<AuthenticatedUser> usersHasPermissionOn = new LinkedList<>();
         Set<RoleAssignment> ras = roleService.rolesAssignments(dvo);
