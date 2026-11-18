@@ -54,6 +54,36 @@ public enum Permission implements java.io.Serializable {
     // Delete
     DeleteDataverse(BundleUtil.getStringFromBundle("permission.deleteDataverse"), true, Dataverse.class),
     DeleteDatasetDraft(BundleUtil.getStringFromBundle("permission.deleteDataset"), true, Dataset.class),
+    /**
+     * This permission differs from the others: on the object where it is
+     * granted, and the datasets and files it contains, the holder is treated
+     * as a superuser (a "scoped superuser"). Sub-collections are not covered;
+     * the role must be assigned on each one.
+     * 
+     * It implies every other permission. {@code PermissionServiceBean.isSuperuserOn}
+     * is consulted first by {@code hasPermissionsFor}, {@code permissionsFor}
+     * and {@code whichChildrenHasPermissionsFor}, which then grant everything.
+     * 
+     * It replaces {@code user.isSuperuser()} in checks that are about a
+     * specific object (moving, destroying, PIDs, quotas, storage drivers, etc.).
+     * Checks with no object to scope to (users, licenses, dataset types, etc.)
+     * still require a global superuser.
+     * 
+     * Group membership is resolved without the request, so request-based
+     * groups (IP groups and mail domain groups) cannot confer it, and guests
+     * never hold it.
+     * 
+     * The {@code "all"} shortcut in {@code RoleDTO} excludes it; it must be
+     * granted explicitly.
+     * 
+     * {@code PermissionServiceBean.getUsersWithPermissionOn} only looks at the
+     * permissions a role lists, so holders are not notified as if they held the
+     * permissions it implies.
+     * 
+     * Introduced in https://github.com/IQSS/dataverse/pull/12676
+     *
+     * @see edu.harvard.iq.dataverse.PermissionServiceBean#isSuperuserOn(edu.harvard.iq.dataverse.authorization.users.AuthenticatedUser, DvObject)
+     */
     ActAsSuperuser(BundleUtil.getStringFromBundle("permission.actAsSuperuser"), true, DvObject.class);
 
 
